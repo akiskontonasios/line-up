@@ -64,7 +64,7 @@ object Europarl3 {
     val doc = readURL(url, in =>
       XML.loadString(io.Source.fromInputStream(new GZIPInputStream(in)).getLines.drop(1).mkString))
     doc \\ "s" map (s => s.attribute("id").get.map(_.text.toInt).head ->
-      (s \\ "w").map(w => w.text).mkString("", " ", "").replaceAll(" ([\\.,!'])", "$1"))
+      (s \\ "w").map(w => w.text).mkString("", " ", "").replaceAll(" ([\\.,!\\?'])", "$1"))
   }
 
   def saveCorpus(fileName: String = "europarl3.txt", directory: String = ".", numberOfTexts: Int = -1) = {
