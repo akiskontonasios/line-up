@@ -8,7 +8,7 @@ import java.util.zip.GZIPInputStream
 
 case class Translation(de: Seq[String], en: Seq[String]) {
   override def toString =
-    "\nde %2d: %s\nen %2d: %s".format(de.size, de.mkString(" | "), en.size, en.mkString(" | "))
+    "\nde %d: %s\nen %d: %s".format(de.size, de.mkString(" | "), en.size, en.mkString(" | "))
 }
 
 object Europarl3 {
