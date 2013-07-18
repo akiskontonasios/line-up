@@ -1,9 +1,6 @@
 package lineup;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -18,7 +15,13 @@ public class LineupCorpusReader implements CorpusReader {
     private String targetLanguage;
 
     public List<Translation> readCorpus(String file) throws FileNotFoundException {
-        return readCorpus(new java.io.FileReader(file));
+        try {
+            return readCorpus(new InputStreamReader(new FileInputStream(file), "UTF8"));
+        } catch (UnsupportedEncodingException e) {
+            System.err.println("Unsupported Encoding: " + e.getMessage());
+            System.exit(1);
+        }
+        return null;
     }
 
     public List<Translation> readCorpus(Reader reader) {
@@ -86,7 +89,7 @@ public class LineupCorpusReader implements CorpusReader {
     }
 
     protected List<String> parseSentences(String line) throws CorpusFormatException {
-        String[] tokens = line.split(":|\\|{2}]");
+        String[] tokens = line.split(":|\\|");
         if (tokens.length >= 2 && tokens[0].matches("[a-z]{2} \\d")) {
             List<String> result = new LinkedList<String>();
             for (int i = 1; i < tokens.length; ++i) {

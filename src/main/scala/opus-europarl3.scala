@@ -12,7 +12,6 @@ case class Translation(de: Seq[String], en: Seq[String]) {
 }
 
 object Europarl3 {
-
   def bodyTag(name: String) = s"<$name[^/]*</$name>".r
   def emptyTag(name: String) = s"<$name[^>]*>".r
 
@@ -64,8 +63,14 @@ object Europarl3 {
     val doc = readURL(url, in =>
       XML.loadString(io.Source.fromInputStream(new GZIPInputStream(in)).getLines.drop(1).mkString))
     doc \\ "s" map (s => s.attribute("id").get.map(_.text.toInt).head ->
-      (s \\ "w").map(w => w.text).mkString("", " ", "").replaceAll(" ([\\.,!\\?'])", "$1"))
+      fixWhitespace((s \\ "w").map(w => w.text).mkString("", " ", "")))
   }
+
+  def fixWhitespace(str: String) = str
+    .replaceAll(" ([\\.,!\\?'])", "$1")
+    .replaceAll("([^ ])('[^']+')", "$1 $2")
+    .replaceAll("\" ([^\"]+) \"", "\"$1\"")
+    .replaceAll("\\b(\\p{L}+)' s\\b", "$1's")
 
   def saveCorpus(fileName: String = "europarl3.txt", directory: String = ".", numberOfTexts: Int = -1) = {
     val texts = if (numberOfTexts == -1) files.size else numberOfTexts

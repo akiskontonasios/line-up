@@ -22,6 +22,22 @@ public class Translation {
         this.targetLanguage = targetLanguage;
     }
 
+    public Translation(String sourceLanguage, String targetLanguage, String sourceSentence, String targetSentence) {
+        this(sourceLanguage, targetLanguage);
+
+        getSourceSentences().add(sourceSentence);
+        getTargetSentences().add(targetSentence);
+    }
+
+    public Translation copy(List<String> sources, List<String> targets) {
+        Translation copy = new Translation(getSourceLanguage(), getTargetLanguage());
+
+        copy.getSourceSentences().addAll(sources);
+        copy.getTargetSentences().addAll(targets);
+
+        return copy;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("Translation(");
