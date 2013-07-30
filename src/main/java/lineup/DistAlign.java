@@ -390,6 +390,55 @@ public class DistAlign {
         return result;
     }
 
+    public Set<String> sourceDeclensions(String word, boolean includeSource) {
+        if (includeSource && srcDeclCache.containsKey(word)) {
+            return srcDeclCache.get(word);
+        } else {
+            Set<String> decls = declensions(word, getSourceWords().keySet(), includeSource);
+            if (!includeSource) {
+                srcDeclCache.put(word, decls);
+            }
+            return decls;
+        }
+    }
+
+    public Set<String> targetDeclensions(String word, boolean includeSource) {
+        if (includeSource && tgtDeclCache.containsKey(word)) {
+            return tgtDeclCache.get(word);
+        } else {
+            Set<String> decls = declensions(word, getTargetWords().keySet(), includeSource);
+            if (includeSource) {
+                tgtDeclCache.put(word, decls);
+            }
+            return decls;
+        }
+    }
+
+    public Set<String> declensions(String word, Set<String> words, boolean includeSource) {
+        Set<String> result = new HashSet<String>();
+
+        if (word.length() > 3) {
+            for (String cand : words) {
+                if (cand.length() <= 3)
+                    continue;
+                if (getWordParser().declension(word, cand)) {
+                    result.add(cand);
+                }
+            }
+        }
+
+        if (!includeSource) {
+            result.remove(word);
+        } else if (result.isEmpty()) {
+            result.add(word);
+        }
+
+        return result;
+    }
+
+    private Map<String, Set<String>> srcDeclCache = new HashMap<String, Set<String>>();
+    private Map<String, Set<String>> tgtDeclCache = new HashMap<String, Set<String>>();
+
     public Set<Relation> findRelatedWords(List<String> sources, List<String> targets) {
         return findRelatedWords(sources, targets, 4, 2);
     }
@@ -600,8 +649,13 @@ public class DistAlign {
 
             while (m.find()) {
                 String word = m.group();
-                candidates.add(new Candidate(word,
-                        !reverse ? translationProbability(sourceWord, word) : reverseTranslationProbability(sourceWord, word)));
+                Candidate candidate = new Candidate(word, 0);
+                for (String decl : (reverse ? targetDeclensions(sourceWord, true) : sourceDeclensions(sourceWord, true))) {
+                    double p = !reverse ? translationProbability(decl, word) : reverseTranslationProbability(decl, word);
+
+                    candidate.boostProbability(p);
+                }
+                candidates.add(candidate);
             }
         }
 

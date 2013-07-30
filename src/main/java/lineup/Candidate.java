@@ -21,6 +21,10 @@ public class Candidate {
         return probability;
     }
 
+    public void boostProbability(double probability) {
+        this.probability += probability;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
