@@ -6,12 +6,21 @@ import java.net._
 import java.io._
 import java.util.zip.GZIPInputStream
 
-case class Translation(de: Seq[String], en: Seq[String]) {
-  override def toString =
-    "\nde %d: %s\nen %d: %s".format(de.size, de.mkString(" | "), en.size, en.mkString(" | "))
-}
-
+/**
+ * Sentence-aligned Europarl v3 German to English
+ */
 object Europarl3 {
+
+  case class Translation(de: Seq[String], en: Seq[String]) extends lineup.NtoNTranslation {
+    override def toString =
+      "\nde %d: %s\nen %d: %s".format(de.size, de.mkString(" | "), en.size, en.mkString(" | "))
+
+    def getSourceLanguage = "de"
+    def getTargetLanguage = "en"
+    def getSourceSentences = java.util.Arrays.asList(de: _*)
+    def getTargetSentences = java.util.Arrays.asList(en: _*)
+  }
+
   def bodyTag(name: String) = s"<$name[^/]*</$name>".r
   def emptyTag(name: String) = s"<$name[^>]*>".r
 
