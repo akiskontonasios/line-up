@@ -9,7 +9,7 @@ import java.util.List;
  *
  * @author Markus Kahl
  */
-public class Translation {
+public class Translation implements NtoNTranslation {
 
     private String sourceLanguage;
     private String targetLanguage;
@@ -27,6 +27,13 @@ public class Translation {
 
         getSourceSentences().add(sourceSentence);
         getTargetSentences().add(targetSentence);
+    }
+
+    public Translation(NtoNTranslation tr) {
+        this(tr.getSourceLanguage(), tr.getTargetLanguage());
+
+        getSourceSentences().addAll(tr.getSourceSentences());
+        getTargetSentences().addAll(tr.getTargetSentences());
     }
 
     public Translation copy(List<String> sources, List<String> targets) {
