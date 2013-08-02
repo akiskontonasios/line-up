@@ -62,15 +62,20 @@ public class DistAlign {
 
     private PrintStream out = new PrintStream(System.out);
 
-    private WordParser wordParser = WordParser.instance;
+    private WordParser wordParser;
 
-    public DistAlign(List<Translation> corpus) {
+    public DistAlign(List<Translation> corpus, WordParser wordParser) {
         this.corpus = corpus;
+        this.wordParser = wordParser;
 
         computeWordDistribution();
 
         sourceWordCount = sumValues(getSourceWords());
         targetWordCount = sumValues(getTargetWords());
+    }
+
+    public DistAlign(List<Translation> corpus) {
+        this(corpus, WordParser.instance);
     }
 
     private Random random = new Random();
