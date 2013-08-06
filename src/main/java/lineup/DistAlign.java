@@ -8,6 +8,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.util.concurrent.*;
+
 import static lineup.util.Fun.*;
 
 /**
@@ -63,6 +65,8 @@ public class DistAlign {
     private PrintStream out = new PrintStream(System.out);
 
     private WordParser wordParser;
+
+    ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     public DistAlign(List<Translation> corpus, WordParser wordParser) {
         this.corpus = corpus;
@@ -630,17 +634,38 @@ public class DistAlign {
     }
 
     public List<PossibleTranslations> possibleTranslations(
-            List<String> sourceSentences, List<String> targetSentences, int limit, boolean reverse) {
+            final List<String> sourceSentences, final List<String> targetSentences,
+            final int limit, final boolean reverse) {
 
         List<PossibleTranslations> translations = new LinkedList<PossibleTranslations>();
+        List<Future<PossibleTranslations>> tasks = new LinkedList<Future<PossibleTranslations>>();
 
         for (String source : sourceSentences) {
             Matcher m = getWordParser().getWordPattern().matcher(source);
 
             while (m.find()) {
-                String word = m.group();
-                translations.add(possibleTranslations(word, targetSentences, limit, reverse));
+                final String word = m.group();
+                Callable<PossibleTranslations> task = new Callable<PossibleTranslations>() {
+                    public PossibleTranslations call() throws Exception {
+                        return possibleTranslations(word, targetSentences, limit, reverse);
+                    }
+                };
+                tasks.add(exec.submit(task));
             }
+        }
+
+        for (Future<PossibleTranslations> task : tasks) {
+            PossibleTranslations value = null;
+            while (value == null) {
+                try {
+                    value = task.get();
+                } catch (InterruptedException e) {
+                    System.out.println("[warning] " + e.getMessage());
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+            translations.add(value);
         }
 
         return translations;
@@ -734,8 +759,8 @@ public class DistAlign {
         return (occurrences / (double) matches.size()) / getCorpus().size();
     }
 
-    private Map<String, List<Translation>> targetGivenSourceCache = new HashMap<String, List<Translation>>();
-    private Map<String, List<Translation>> sourceGivenTargetCache = new HashMap<String, List<Translation>>();
+    private Map<String, List<Translation>> targetGivenSourceCache = new ConcurrentHashMap<String, List<Translation>>();
+    private Map<String, List<Translation>> sourceGivenTargetCache = new ConcurrentHashMap<String, List<Translation>>();
 
     protected void computeWordDistribution() {
         sourceWords = new HashMap<String, Integer>();
