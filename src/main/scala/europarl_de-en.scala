@@ -52,7 +52,9 @@ object Europarl3 {
 
   lazy val files = fetchFiles("de-en").map(file => url("de-en") + file).toList
 
-  def translations(file: String): Seq[Translation] = {
+  def translations = new lineup.LineupCorpusReader().readCorpus("src/main/resources/europarl3.txt")
+
+  def readTranslations(file: String): Seq[Translation] = {
     val doc = readURL(file, in => io.Source.fromInputStream(new GZIPInputStream(in)).mkString)
     val Attr = ".*\"(.*)\".*\"(.*)\".*\"(.*)\".*".r
     val Targets = "<link.*\"([\\d ]+);([\\d ]+)\".*/>".r
@@ -88,7 +90,7 @@ object Europarl3 {
     try {
       out.println("# number of included episodes: " + numberOfTexts)
       out.println("# source: " + baseUrl + "/")
-      val numTranslations = files.take(texts).map(translations).map { translations =>
+      val numTranslations = files.take(texts).map(readTranslations).map { translations =>
         translations.foreach(out.println)
         out.println("# next episode \n")
         translations.size
