@@ -84,6 +84,14 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
 	}
 }
 
+/**
+ *  Results 
+ *  
+ *  N:          972.0 (out of 972) 
+ *  Precision:  0.61426216 
+ *  Recall:     0.34737018 
+ *  F1 Measure: 0.44377947
+ */
 object Europarl2Evaluation {
 	val translations = Europarl2.translations
 
