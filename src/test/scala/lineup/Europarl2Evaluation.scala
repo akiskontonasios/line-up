@@ -31,7 +31,7 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
 			java.util.Arrays.asList(translations.map(new Translation(_)): _*),
 			new CustomWordParser)
 
-		val ms = translations.take(500).zipWithIndex.map {
+		val ms = translations.zipWithIndex.map {
 			case (tr, i) => tr -> dist.associate(i, 6)
 		}.map { case (tr: Europarl2.Translation, pts: java.util.List[PossibleTranslations]) =>
 			val words = tr.words.en.filterNot(w => dist.getWordParser.getWords(w).isEmpty)
