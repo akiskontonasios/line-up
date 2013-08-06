@@ -93,7 +93,8 @@ object Europarl2Evaluation {
 		this setWordPattern Pattern.compile(
 				"(\\d+(th|rd|nd|st|s))" + "|" +
 				"(i\\.e\\.|e\\.g\\.)" + "|" +
-				"((\\d+([\\.\\-]\\d+)?)(_(%|a\\.m\\.?|p\\.m\\.?))?)" + "|" +
+				"\\d+-year(-old?)?" + "|" +
+				"((\\d+([\\.\\-_]\\d+)?)(_(%|a\\.m\\.?|p\\.m\\.?))?)" + "|" +
 				"(\\p{L}[\\p{L}_\\-0-9]*('s)?)");
 
 		// public boolean declension(String a, String b) {
