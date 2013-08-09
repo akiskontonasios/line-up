@@ -47,9 +47,9 @@ import static lineup.util.Fun.*;
  *
  * @author Markus Kahl
  */
-public class DistAlign {
+public class DistAlign<T extends NtoNTranslation> {
 
-    private List<Translation> corpus;
+    private List<T> corpus;
 
     private Map<String, Integer> sourceWords;
     private Map<String, Integer> targetWords;
@@ -65,10 +65,20 @@ public class DistAlign {
     private PrintStream out = new PrintStream(System.out);
 
     private WordParser wordParser;
+    private Splitter splitter = new BluntSplitter();
 
-    ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    ExecutorService exec = Executors.newFixedThreadPool(
+        Runtime.getRuntime().availableProcessors(),
+        new ThreadFactory() {
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setDaemon(true);
 
-    public DistAlign(List<Translation> corpus, WordParser wordParser) {
+                return thread;
+            }
+        });
+
+    public DistAlign(List<T> corpus, WordParser wordParser) {
         this.corpus = corpus;
         this.wordParser = wordParser;
 
@@ -78,7 +88,7 @@ public class DistAlign {
         targetWordCount = sumValues(getTargetWords());
     }
 
-    public DistAlign(List<Translation> corpus) {
+    public DistAlign(List<T> corpus) {
         this(corpus, WordParser.instance);
     }
 
@@ -103,8 +113,25 @@ public class DistAlign {
     public void details() {
         if (ptsCache != null) {
             out.println("============ Relations ============");
+            int maxWordLength = 0;
             for (PossibleTranslations pt : ptsCache) {
-                out.println(pt);
+                if (pt.getSourceWord().length() > maxWordLength) {
+                    maxWordLength = pt.getSourceWord().length();
+                }
+            }
+
+            for (PossibleTranslations pt : ptsCache) {
+                out.printf(" %" + maxWordLength + "s => ", pt.getSourceWord());
+                boolean first = true;
+                for (Candidate cand : pt.getCandidates()) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        out.print(", ");
+                    }
+                    out.printf("(%s, %.2g)", cand.getWord(), cand.getProbability());
+                }
+                out.println();
             }
         }
     }
@@ -117,6 +144,7 @@ public class DistAlign {
         for (Relation part : split(index, pts)) {
             String src = part.getSource().trim();
             String tgt = part.getTarget().trim();
+            int line = Math.max(src.length(), tgt.length());
 
             for (PossibleTranslations pt : pts) {
                 if (pt.getCandidates().size() > 0) {
@@ -130,7 +158,12 @@ public class DistAlign {
 
             out.println(src);
             out.println(tgt);
-            out.println();
+
+            StringBuilder sb = new StringBuilder(line);
+            for (int i = 0; i < line; ++i) {
+                sb.append("-");
+            }
+            out.println(sb.toString());
         }
     }
 
@@ -147,13 +180,13 @@ public class DistAlign {
     }
 
     public List<Relation> split(int index, List<PossibleTranslations> pts) {
-        Translation tr = getCorpus().get(index);
+        NtoNTranslation tr = getCorpus().get(index);
 
-        return new BluntSplitter().split(tr, pts);
+        return splitter.split(tr, pts);
     }
 
     public void printSentence(int index) {
-        Translation tr = getCorpus().get(index);
+        NtoNTranslation tr = getCorpus().get(index);
         out.println(mkString(tr.getSourceSentences(), " "));
         out.println(mkString(tr.getTargetSentences(), " "));
     }
@@ -300,13 +333,20 @@ public class DistAlign {
                             break;
                         }
                     }
-                    if (newWord) {
-                        pt.getCandidates().add(new Candidate(
+                    if (newWord || true) {
+                        Candidate cand = new Candidate(
                                 rel.getTarget(),
-                                sourceProbability(rel.getSource()) * targetProbability(rel.getTarget())));
+                                sourceProbability(rel.getSource()) * targetProbability(rel.getTarget()));
+
+                        if (rel.getSource().equals(rel.getTarget())) {
+                            cand.setProbability(0.99);
+                        }
+                        pt.getCandidates().add(cand);
                     }
                 }
             }
+
+            pt.sort();
 
             if (!retainMostLikely) {
                 if (prune < limit && prune != -1) {
@@ -458,8 +498,8 @@ public class DistAlign {
         if (precision == -1)
             precision = 2;
 
-        Shingling src = new Shingling(n, mkString(sources, ""));
-        Shingling tgt = new Shingling(n, mkString(targets, ""));
+        Shingling src = new Shingling(n, mkString(sources, ""), getWordParser());
+        Shingling tgt = new Shingling(n, mkString(targets, ""), getWordParser());
         Set<Relation> results = new HashSet<Relation>();
 
         for (Shingling.Shingles ssh : src.getShingles()) {
@@ -510,9 +550,9 @@ public class DistAlign {
 
     protected List<PossibleTranslations> retainMostLikely(String word, List<PossibleTranslations> pts, boolean pure) {
         List<PossibleTranslations> result = pure ? new LinkedList<PossibleTranslations>() : pts;
-        List<PossibleTranslations> remove = new LinkedList<PossibleTranslations>();
         PossibleTranslations maxPt = null;
         double maxProb = 0;
+        int maxCount = 0;
 
         if (pure) {
             for (PossibleTranslations pt : pts) {
@@ -524,26 +564,22 @@ public class DistAlign {
             for (Candidate candidate : pt.getCandidates()) {
                 if (candidate.getWord().equals(word)) {
                     if (candidate.getProbability() > maxProb) {
-                        if (maxPt != null) {
-                            remove.add(maxPt);
-                        }
                         maxProb = candidate.getProbability();
-                        maxPt = pt;
-                    } else {
-                        remove.add(pt);
                     }
-                    break;
                 }
             }
         }
 
-        for (PossibleTranslations pt : remove) {
+        for (PossibleTranslations pt : pts) {
             Iterator<Candidate> cands = pt.getCandidates().iterator();
             while (cands.hasNext()) {
                 Candidate cand = cands.next();
                 if (cand.getWord().equals(word)) {
-                    cands.remove();
-                    break;
+                    if (cand.getProbability() < maxProb) {
+                        cands.remove();
+                    } else if (cand.getProbability() == maxProb && maxCount++ >= 1) {
+                        cands.remove();
+                    }
                 }
             }
         }
@@ -608,7 +644,7 @@ public class DistAlign {
 
         fill: while (related.size() == 0 || (related.size() < 5 && getSourceWordCount() > 6)) {
             int i = -1;
-            for (Translation tr : getCorpus()) {
+            for (NtoNTranslation tr : getCorpus()) {
                 ++i;
                 if (i != corpusSkipIndex && !indices.contains(i) &&
                         getWordParser().findWord(sourceWord, tr.getSourceSentences())) {
@@ -625,11 +661,11 @@ public class DistAlign {
         return related;
     }
 
-    public List<PossibleTranslations> possibleTranslations(Translation translation, int limit) {
+    public List<PossibleTranslations> possibleTranslations(NtoNTranslation translation, int limit) {
         return possibleTranslations(translation.getSourceSentences(), translation.getTargetSentences(), limit, false);
     }
 
-    public List<PossibleTranslations> reversePossibleTranslations(Translation translation, int limit) {
+    public List<PossibleTranslations> reversePossibleTranslations(NtoNTranslation translation, int limit) {
         return possibleTranslations(translation.getTargetSentences(), translation.getSourceSentences(), limit, true);
     }
 
@@ -738,20 +774,20 @@ public class DistAlign {
     public double relationProbability(String word1, String word2, boolean targetGivenSource) {
         int occurrences = 0;
 
-        Map<String, List<Translation>> cache = targetGivenSource ?
+        Map<String, List<NtoNTranslation>> cache = targetGivenSource ?
                 targetGivenSourceCache : sourceGivenTargetCache;
-        List<Translation> matches = cache.get(word2);
+        List<NtoNTranslation> matches = cache.get(word2);
 
         if (matches == null) {
-            matches = new LinkedList<Translation>();
-            for (Translation tr : getCorpus()) {
+            matches = new LinkedList<NtoNTranslation>();
+            for (NtoNTranslation tr : getCorpus()) {
                 if (getWordParser().findWord(word2, targetGivenSource ? tr.getSourceSentences() : tr.getTargetSentences()))
                     matches.add(tr);
             }
             cache.put(word2, matches);
         }
 
-        for (Translation tr : matches) {
+        for (NtoNTranslation tr : matches) {
             if (getWordParser().findWord(word1, targetGivenSource ? tr.getTargetSentences() : tr.getSourceSentences()))
                 ++occurrences;
         }
@@ -759,14 +795,14 @@ public class DistAlign {
         return (occurrences / (double) matches.size()) / getCorpus().size();
     }
 
-    private Map<String, List<Translation>> targetGivenSourceCache = new ConcurrentHashMap<String, List<Translation>>();
-    private Map<String, List<Translation>> sourceGivenTargetCache = new ConcurrentHashMap<String, List<Translation>>();
+    private Map<String, List<NtoNTranslation>> targetGivenSourceCache = new ConcurrentHashMap<String, List<NtoNTranslation>>();
+    private Map<String, List<NtoNTranslation>> sourceGivenTargetCache = new ConcurrentHashMap<String, List<NtoNTranslation>>();
 
     protected void computeWordDistribution() {
         sourceWords = new HashMap<String, Integer>();
         targetWords = new HashMap<String, Integer>();
 
-        for (Translation tr : getCorpus()) {
+        for (NtoNTranslation tr : getCorpus()) {
             addToDistribution(tr.getSourceSentences(), getSourceWords());
             addToDistribution(tr.getTargetSentences(), getTargetWords());
         }
@@ -797,7 +833,7 @@ public class DistAlign {
         return sum;
     }
 
-    public List<Translation> getCorpus() {
+    public List<T> getCorpus() {
         return corpus;
     }
 
@@ -831,5 +867,13 @@ public class DistAlign {
 
     public WordParser getWordParser() {
         return wordParser;
+    }
+
+    public void setSplitter(Splitter splitter) {
+        this.splitter = splitter;
+    }
+
+    public Splitter getSplitter() {
+        return splitter;
     }
 }

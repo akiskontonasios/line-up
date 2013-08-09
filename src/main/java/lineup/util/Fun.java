@@ -27,11 +27,19 @@ public class Fun {
     }
 
     public static <T> T last(List<T> list) {
-        return list.get(list.size() - 1);
+        if (list.size() == 0) {
+            return null;
+        } else {
+            return list.get(list.size() - 1);
+        }
     }
 
     public static <T> List<T> List(T... values) {
         return Arrays.asList(values);
+    }
+
+    public static <A, B> Tuple<A, B> tuple(A a, B b) {
+        return new Tuple<A, B>(a, b);
     }
 
     public static String mkString(Collection<?> items, String prefix, String separator, String postfix) {

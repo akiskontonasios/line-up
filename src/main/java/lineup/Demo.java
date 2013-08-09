@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
+import lineup.splitters.GermanEnglishSplitter;
+
 import static lineup.util.Fun.*;
 
 /**
@@ -16,17 +18,19 @@ import static lineup.util.Fun.*;
 public class Demo {
 
     private List<Translation> corpus;
-    private DistAlign dist;
+    private DistAlign<Translation> dist;
     private BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
     private Collection<Command> commands = new LinkedList<Command>();
     private PrintStream out;
 
     public Demo() throws UnsupportedEncodingException {
         corpus = loadCorpus();
-        dist = new DistAlign(corpus);
+        dist = Alignment.byWordDistribution(corpus);
 
         commands.addAll(List(new Exit(), new Help(), new Corpus(), new Show(), new Break(), new Details()));
+
         dist.setOut(new PrintStream(System.out, true, "UTF8"));
+        dist.setSplitter(new GermanEnglishSplitter(dist.getWordParser()));
 
         out = dist.getOut();
     }
@@ -69,7 +73,7 @@ public class Demo {
 
     public void showCommands() {
         out.println("+-----------------------------------------------------------------------------+");
-        out.println("| line-up                  ==== Commands =====                     12.07.2013 |");
+        out.println("| line-up                  ==== Commands =====                     09.08.2013 |");
         out.println("+-----------------------------------------------------------------------------+");
         out.println("|                                                                             |");
         out.println("| help    - all this                                                          |");
@@ -135,7 +139,7 @@ public class Demo {
             if (args.size() == 1) {
                 Scanner scanner = new Scanner(head(args));
                 if (scanner.hasNextInt()) {
-                    int index = scanner.nextInt() - 1;
+                    int index = scanner.nextInt();
                     if (index >= 0 && index < corpus.size()) {
                         dist.printSentence(index);
                     } else {
@@ -159,7 +163,7 @@ public class Demo {
             if (args.size() == 1) {
                 Scanner scanner = new Scanner(head(args));
                 if (scanner.hasNextInt()) {
-                    int index = scanner.nextInt() - 1;
+                    int index = scanner.nextInt();
                     if (index >= 0 && index < corpus.size()) {
                         dist.show(index);
                     } else {

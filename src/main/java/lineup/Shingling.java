@@ -4,6 +4,7 @@ import lineup.util.Fun;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
 
 /**
  * Set of unique n-grams for a given input sequence.
@@ -12,15 +13,15 @@ import java.util.List;
  */
 public class Shingling {
 
-    public static final String punctuation = "[\\.,;\\?!'\"\\-]";
-
     private int w;
     private String input;
     private List<Shingles> shingles;
+    private WordParser wordParser;
 
-    public Shingling(int w, String input) {
+    public Shingling(int w, String input, WordParser wordParser) {
         this.w = w;
         this.input = input;
+        this.wordParser = wordParser;
     }
 
     public void addShingles(List<String> shingles, String word) {
@@ -32,24 +33,15 @@ public class Shingling {
         }
     }
 
-    public List<Shingles> getShingles(String input, String splitRegex) {
+    public List<Shingles> getShingles(String input) {
         List<Shingles> shingles = new LinkedList<Shingles>();
+        Matcher m = getWordParser().getWordPattern().matcher(input);
 
-        if (splitRegex != null) {
-            for (String token : input.split(splitRegex)) {
-                if (!token.trim().isEmpty()) {
-                    shingles.add(new Shingles(token));
-                }
-            }
-        } else {
-            shingles.add(new Shingles(input));
+        while (m.find()) {
+            shingles.add(new Shingles(m.group()));
         }
 
         return shingles;
-    }
-
-    public List<Shingles> getShingles(String input) {
-        return getShingles(input, "(" + Shingling.punctuation + "| )");
     }
 
     public List<Shingles> getShingles() {
@@ -72,6 +64,14 @@ public class Shingling {
 
     public String getInput() {
         return input;
+    }
+
+    public void setWordParser(WordParser wordParser) {
+        this.wordParser = wordParser;
+    }
+
+    public WordParser getWordParser() {
+        return wordParser;
     }
 
     public class Shingles extends LinkedList<String> {

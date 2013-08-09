@@ -3,11 +3,11 @@ package lineup;
 import java.util.List;
 
 public class Alignment {
-	public static DistAlign byWordDistribution(List<Translation> corpus) {
+	public static <T extends NtoNTranslation> DistAlign<T> byWordDistribution(List<T> corpus) {
 		if (corpus == null || corpus.isEmpty())
 			throw new IllegalArgumentException("DistAlign requires a non-empty corpus.");
 
-		DistAlign dist = new DistAlign(corpus);
+		DistAlign<T> dist = new DistAlign<T>(corpus);
 		String srcLang = corpus.get(0).getSourceLanguage();
 		String tgtLang = corpus.get(0).getTargetLanguage();
 

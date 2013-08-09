@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.regex.*;
 
 public class WordParser {
-	private Pattern wordPattern = Pattern.compile("(\\p{L}[\\p{L}_-]*)|(\\d+)");
+	private Pattern wordPattern = Pattern.compile("(\\p{L}[\\p{L}_\\-0-9]*('s)?)|(\\d+(-\\d+)?)");
 
 	public static final WordParser instance = new WordParser();
 
@@ -65,6 +65,9 @@ public class WordParser {
                 case 'e': break;
                 case 'n': break;
                 case 's': break;
+                case '\'':
+                    if (lengthDelta >= 2 && ext.charAt(i + 1) == 's')
+                        break; // genitive
                 default: return false;
             }
         }

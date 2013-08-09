@@ -332,7 +332,7 @@ de 1: Man kann sich nicht vorbereiten, wenn man hier eine Erklärung hört und g
 en 1: You cannot prepare if you hear a statement in this House and have no idea of its content.
 
 de 1: Deswegen ist es unsere Empfehlung - und mein Eindruck ist, daß die Kommission auch aufgeschlossen ist für diesen Gedanken -, daß wir im Februar die Debatte über das langfristige Programm der Kommission bis zum Jahre 2005 führen - ich hoffe, die Kommission wird sich bis dahin auch auf ein Programm verständigen, das sie uns vorschlagen wird -, und daß wir gleichzeitig im Februar auch die Debatte über das Legislativprogramm der Kommission für das Jahr 2000 führen.
-en 1: That is why we would recommend - and it is my impression that the Commission is also open to this idea - that we hold the debate on the Commission 's long-term programme up to the year 2005 in February - and I hope that the Commission will agree on a programme before then which it will propose to us - and that, at the same time, in February we also hold the debate on the Commission's legislative programme for the year 2000.
+en 1: That is why we would recommend - and it is my impression that the Commission is also open to this idea - that we hold the debate on the Commission's long-term programme up to the year 2005 in February - and I hope that the Commission will agree on a programme before then which it will propose to us - and that, at the same time, in February we also hold the debate on the Commission's legislative programme for the year 2000.
 
 de 1: Es ist also auch ein vernünftiger sachlicher Zusammenhang, der uns rät, die Debatte über beide Programme gemeinsam zu führen.
 en 1: The fact that the subjects are connected also suggests that we should hold the debate on both programmes together.
@@ -569,7 +569,7 @@ de 2: Die Verkehrssicherheit bestimmte in letzter Zeit häufig die Negativschlag
 en 1: Transport safety has sadly been in the news recently : the Paddington rail crash in London, the terrible rail crash in Norway, the two aviation crashes involving EU citizens and the natural disaster involving the Erika off Brittany - all within the last four months - remind us that transport safety can never be taken for granted and that those charged with protecting the public must be highly motivated and highly qualified.
 
 de 1: Der Berichterstatter stellte fest, daß der Rat in seinem Gemeinsamen Standpunkt sechs der zehn vom Parlament in der ersten Lesung angenommenen Änderungen übernommen hat und daß die übrigen Änderungen des Parlaments im wesentlichen berücksichtigt worden sind.
-en 1: The rapporteur has pointed out to the House that in its common position the Council has accepted six of Parliament 's ten amendments put forward at first reading and that the substance of Parliament's other amendments has been retained.
+en 1: The rapporteur has pointed out to the House that in its common position the Council has accepted six of Parliament's ten amendments put forward at first reading and that the substance of Parliament's other amendments has been retained.
 
 de 1: Meine Fraktion wird den Gemeinsamen Standpunkt daher unterstützen und begrüßt die baldige Umsetzung der Regelung, die ein weiteres Instrument im Kampf um die maximale Erhöhung der Verkehrssicherheit in der EU darstellen wird.
 en 1: My Group will therefore support the common position and looks forward to the enactment of the legislation which will provide us with yet another tool in our fight to make transport in the European Union as safe as possible.
@@ -6028,7 +6028,7 @@ de 1: Eines steht jedoch zweifelsfrei fest, alle drei Unfälle hatten eine ökol
 en 1: It is absolutely certain that all three left us with an ecological disaster.
 
 de 1: So wie vor Jahren im Falle von Westwales, den Shetlandinseln und früheren Unfällen gilt das Mitgefühl meiner Fraktion nunmehr den Menschen in der Bretagne, deren Lebensraum durch diese Katastrophe verseucht wurde.
-en 1: My group 's sympathy goes out to the people of Brittany who have seen their area despoiled by this disaster, just as my group's sympathy went out to the people of West Wales and to the Shetland Islands on previous occasions.
+en 1: My group's sympathy goes out to the people of Brittany who have seen their area despoiled by this disaster, just as my group's sympathy went out to the people of West Wales and to the Shetland Islands on previous occasions.
 
 de 2: Ist es nicht an der Zeit, daß wir damit aufhören, unser Mitgefühl zu bekunden, und statt dessen alles tun, um diese Schandflecke der Meere ein für allemal von unseren Gewässern verbannen. | Andernfalls wird es nicht lange dauern, und wir werden einen neuen Entschließungsantrag diskutieren, wenn wieder einmal ein Billigflaggentanker gesunken ist und sein Rohöl ungehindert ins Meer fließt.
 en 1: Is it not about time that we stopped expressing sympathy and started issuing enforcement notices to get rid of these ships of shame in favour of safe seas or we will be back again, later on this year, discussing a new motion for a resolution when yet another flag-of-convenience tanker sadly goes down spewing its crude oil all over the sea.
@@ -8056,7 +8056,7 @@ de 1: Ich möchte das Parlament daher bitten, dafür zu sorgen, daß seine Ansic
 en 1: I would therefore ask Parliament to make appropriate arrangements to ensure that its views can be formulated as quickly as possible.
 
 de 1: Die Kommission ist bei der Erarbeitung einer wichtigen Voraussetzung dafür, daß der Gesundheitsschutz der Verbraucher auf ein neues Niveau angehoben und damit das Vertrauen der Verbraucher in das System der Lebensmittelsicherheit der Europäischen Union wiederhergestellt werden kann, dringend auf die Zuarbeit durch das Parlament angewiesen.
-en 1: It is essential that the Commission should have the benefit of Parliament 's contribution to the shaping of what would be a key component of raising consumer health protection to a new plane and thereby restoring consumer confidence in the European Union's food safety regime.
+en 1: It is essential that the Commission should have the benefit of Parliament's contribution to the shaping of what would be a key component of raising consumer health protection to a new plane and thereby restoring consumer confidence in the European Union's food safety regime.
 
 de 1: Die europäische Lebensmittelbehörde wird in Zukunft einen wichtigen Bestandteil des Systems der Lebensmittelsicherheit in der EU darstellen.
 en 1: The European food authority will be a key ingredient in the EU's food safety regime in the years ahead.
@@ -8473,7 +8473,7 @@ de 1: Betrifft : Bau eines Kernkraftwerks in der erdbebengefährdeten Türkei Di
 en 1: Subject : Construction of nuclear plant in earthquake-prone Turkey The two recent earthquakes in Turkey registering more than 7 on the Richter scale raise tremendous doubts about Turkey's persistence with the construction of costly nuclear reactors at Akkuyu, while energy reserves produced by the Atatürk dams are exported to third countries and the EU spends a slice of its budget on repairing the damage wrought by the earthquakes.
 
 de 1: Die türkischen Kernkraftvorhaben ignorieren die Gefahren für die Bevölkerung und die Ökosysteme der Türkei und der angrenzenden Regionen, und es entsteht der Verdacht, daß sich hinter ihnen vorab beschlossene Pläne der politisch-militärischen Führung der Türkei verbergen, eine Nukleartechnologie zu erwerben, die die Möglichkeit zum Bau von Kernwaffen bietet, da Reaktoren kanadischer Herkunft beschafft werden sollen, die denen Indiens und Pakistans entsprechen.
-en 1: Turkey 's nuclear plans? which ignore the risks to the population and ecosystems of Turkey and the surrounding region? prompt the suspicion that there are underlying plans previously determined by Turkey's political and military leaders to acquire nuclear technology enabling them to build nuclear weapons, as evidenced by their attempts to buy reactors of Canadian origin of the type acquired by India and Pakistan.
+en 1: Turkey's nuclear plans? which ignore the risks to the population and ecosystems of Turkey and the surrounding region? prompt the suspicion that there are underlying plans previously determined by Turkey's political and military leaders to acquire nuclear technology enabling them to build nuclear weapons, as evidenced by their attempts to buy reactors of Canadian origin of the type acquired by India and Pakistan.
 
 de 1: Was gedenkt die Kommission zu tun, um Nuklearunfälle und die Verbreitung von Nuklearwaffen in einem Land zu vermeiden, das der EU beitreten möchte und riesige Summen in Nuklearprogramme steckt, während es andererseits aus europäischen Mitteln Finanzhilfe erhält?
 en 1: What steps will the Commission take to prevent nuclear accidents and the proliferation of nuclear weapons in a country that wishes to join the EU but spends enormous amounts on nuclear programmes while receiving financial aid from the EU budget?
@@ -8869,7 +8869,7 @@ de 1: Ich wünschte, die chinesischen Behörden hätten auf das Angebot des Dala
 en 1: I wish that the Chinese authorities had responded consistently and positively to that overture from the Dalai Lama.
 
 de 1: Etwa zur Zeit des Chinabesuchs von Präsident Clinton vermittelte der Präsident der Volksrepublik China den Eindruck, als stünde der Dialog auf der Tagesordnung.
-en 1: At or around the time of President Clinton 's visit to China, the President of the People's Republic of China gave the impression that dialogue was on the agenda.
+en 1: At or around the time of President Clinton's visit to China, the President of the People's Republic of China gave the impression that dialogue was on the agenda.
 
 de 1: Ein solcher Dialog käme nicht nur Tibet und allen Menschen, denen Frieden und Stabilität in Asien am Herzen liegen, zugute, sondern es wäre auch für das Ansehen der Volksrepublik China von großem Vorteil, wenn sie auf diese Versuche der Dialogaufnahme reagieren würde.
 en 1: It would be very beneficial, not just for Tibet and for all those who believe in peace and stability in Asia, but it would also be greatly to the credit of the Government of the People's Republic of China if they were to respond to those attempts to begin a dialogue.
@@ -8965,7 +8965,7 @@ de 1: "Ich möchte nochmals betonen, daß die Kommission sämtlichen in der Empf
 en 1: "I would like to stress again that the Commission has accepted all the Ombudsman's recommendations contained in his draft recommendations of July 1999".
 
 de 1: Die beiden Dokumente, d. h. das Dokument der Kommission und die Vorlage des Bürgerbeauftragten, unterscheiden sich nur unwesentlich voneinander.
-en 1: Both documents, that is the Commission 's document and the Ombudsman's draft, cover largely the same ground.
+en 1: Both documents, that is the Commission's document and the Ombudsman's draft, cover largely the same ground.
 
 de 1: Die einzige wesentliche Frage, die sich in diesem Zusammenhang stellt, betrifft die rechtliche Grundlage.
 en 1: The only substantial question that has arisen is the legislative basis.
@@ -9652,7 +9652,7 @@ de 1: Anfrage Nr. 42 von ( H-0817/99 ) :
 en 1: Question No 42 by ( H-0817/ 99 ) :
 
 de 1: Betrifft : Pläne der Kommission zur Vorlage eines neuen sozialen Aktionsprogramms Es ist dringlich, daß die Kommission baldmöglichst ein neues soziales Aktionsprogramm vorlegt, in dem sie einen konkreten Plan, einschließlich Zeitplan für die Durchführung, sowohl hinsichtlich der legislativen Arbeit im Bereich der sozialen Sicherheit als auch der Initiative zu einer Rahmenvereinbarung im Rahmen des sozialen Dialogs darlegen kann.
-en 1: Subject : Commission 's plans for presentation of a new social action programme It is important that the Commission present as soon as possible a new social action programme, setting out a specific plan with a timetable for implementation for both the legislative work in the area of social security and initiatives for framework agreements in the context of the'social dialogue'.
+en 1: Subject : Commission's plans for presentation of a new social action programme It is important that the Commission present as soon as possible a new social action programme, setting out a specific plan with a timetable for implementation for both the legislative work in the area of social security and initiatives for framework agreements in the context of the'social dialogue'.
 
 de 1: Kann die Kommission ihre konkreten Absichten hinsichtlich der Vorlage eines neuen sozialen Aktionsprogramms darlegen?
 en 1: Can the Commission say what its precise intentions are regarding the presentation of a new social action programme?
@@ -10036,7 +10036,7 @@ de 1: Denn diesen Reformprozeß brauchen wir.
 en 1: But we need that reform process.
 
 de 1: Viele der im Bericht unseres Ausschusses angeführten allgemeinen Punkte haben im Bericht von Frau van der Laan Erwähnung gefunden.
-en 1: Many of the general points raised in our committee 's report have been covered in Mrs van der Laan's report.
+en 1: Many of the general points raised in our committee's report have been covered in Mrs van der Laan's report.
 
 de 1: Es ist ein hervorragender Bericht, und wir alle sollten sie dazu beglückwünschen.
 en 1: It is an excellent report and we should all congratulate her on it.
@@ -13905,7 +13905,7 @@ de 1: Betrifft : Bau eines Kernkraftwerks in der erdbebengefährdeten Türkei Di
 en 1: Subject : Construction of nuclear plant in earthquake-prone Turkey The two recent earthquakes in Turkey registering more than 7 on the Richter scale raise tremendous doubts about Turkey's persistence with the construction of costly nuclear reactors at Akkuyu, while energy reserves produced by the Atatürk dams are exported to third countries and the EU spends a slice of its budget on repairing the damage wrought by the earthquakes.
 
 de 1: Die türkischen Kernkraftvorhaben ignorieren die Gefahren für die Bevölkerung und die Ökosysteme der Türkei und der angrenzenden Regionen, und es entsteht der Verdacht, daß sich hinter ihnen vorab beschlossene Pläne der politisch-militärischen Führung der Türkei verbergen, eine Nukleartechnologie zu erwerben, die die Möglichkeit zum Bau von Kernwaffen bietet, da Reaktoren kanadischer Herkunft beschafft werden sollen, die denen Indiens und Pakistans entsprechen.
-en 1: Turkey 's nuclear plans B which ignore the risks to the population and ecosystems of Turkey and the surrounding region B prompt the suspicion that there are underlying plans previously determined by Turkey's political and military leaders to acquire nuclear technology enabling them to build nuclear weapons, as evidenced by their attempts to buy reactors of Canadian origin of the type acquired by India and Pakistan.
+en 1: Turkey's nuclear plans B which ignore the risks to the population and ecosystems of Turkey and the surrounding region B prompt the suspicion that there are underlying plans previously determined by Turkey's political and military leaders to acquire nuclear technology enabling them to build nuclear weapons, as evidenced by their attempts to buy reactors of Canadian origin of the type acquired by India and Pakistan.
 
 de 1: Was gedenkt der Rat zu tun, um Nuklearunfälle und die Verbreitung von Nuklearwaffen in einem Land zu vermeiden, das der EU beitreten möchte und riesige Summen in Nuklearprogramme steckt, während es andererseits aus europäischen Mitteln Finanzhilfe erhält?
 en 1: What steps will the Council take to prevent nuclear accidents and the proliferation of nuclear weapons in a country that wishes to join the EU but spends enormous amounts on nuclear programmes while receiving financial aid from the EU budget?
@@ -14226,7 +14226,7 @@ de 1: Anfrage Nr. 6 von ( H-0788/99 ) :
 en 1: Question No 6 by ( H-0788/ 99 ) :
 
 de 1: Betrifft : Maßnahmen gegen die anhaltende ethnische Säuberung zu Lasten von Serben und Roma im Kosovo Die NATO-Verteidigungsministerkonferenz formulierte am 2.12.1999 den dringenden Appell, der ethnischen Säuberung zu Lasten der Minderheiten im Kosovo ein Ende zu setzen.
-en 1: Subject : Measures to combat the continuing ethnic cleansing of Serbs and Romanies in Kosovo On 2 December 1999, NATO 's Defence Ministers made a strong appeal for an end to the ethnic cleansing of Kosovo's minority communities.
+en 1: Subject : Measures to combat the continuing ethnic cleansing of Serbs and Romanies in Kosovo On 2 December 1999, NATO's Defence Ministers made a strong appeal for an end to the ethnic cleansing of Kosovo's minority communities.
 
 de 1: Auch das Europäische Parlament verurteilt in einer Entschließung unter Hinweis auf bestimmte Greueltaten gegen Serben und Roma nachdrücklich die anhaltende Gewalt gegen die serbische Bevölkerung und fordert die Führer der Albaner im Kosovo auf, die UN-Resolution 1244 uneingeschränkt zu respektieren.
 en 1: In its resolution referring to specific atrocities committed against Serbs and Romanies, Parliament also vigorously condemns the continuing violence against the Serb population and calls on the leaders of the Kosovo Albanians to fully respect UN Resolution 1244.

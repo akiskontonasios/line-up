@@ -77,11 +77,15 @@ object Europarl3 {
       fixWhitespace((s \\ "w").map(w => w.text).mkString("", " ", "")))
   }
 
-  def fixWhitespace(str: String) = str
-    .replaceAll(" ([\\.,!\\?'])", "$1")
-    .replaceAll("([^ ])('[^']+')", "$1 $2")
-    .replaceAll("\" ([^\"]+) \"", "\"$1\"")
-    .replaceAll("\\b(\\p{L}+)' s\\b", "$1's")
+  def fixWhitespace(str: String) = {
+    val result = str
+      .replaceAll(" ([\\.,!\\?'])", "$1")
+      .replaceAll("([^ ])('[^']+')", "$1 $2")
+      .replaceAll("\" ([^\"]+) \"", "\"$1\"")
+      .replaceAll("\\s+'s\\b", "'s")
+
+    result
+  }
 
   def saveCorpus(fileName: String = "europarl3.txt", directory: String = ".", numberOfTexts: Int = -1) = {
     val texts = if (numberOfTexts == -1) files.size else numberOfTexts

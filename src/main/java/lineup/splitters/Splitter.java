@@ -2,7 +2,7 @@ package lineup.splitters;
 
 import lineup.util.Relation;
 import lineup.PossibleTranslations;
-import lineup.Translation;
+import lineup.NtoNTranslation;
 import lineup.WordParser;
 
 import java.util.List;
@@ -26,7 +26,7 @@ public abstract class Splitter {
 
 	public abstract List<Relation> split(Relation pair, List<PossibleTranslations> relations);
 
-	public List<Relation> split(Translation tr, List<PossibleTranslations> relations) {
+	public List<Relation> split(NtoNTranslation tr, List<PossibleTranslations> relations) {
 		return split(
 				new Relation(
 					mkString(tr.getSourceSentences(), " "),
