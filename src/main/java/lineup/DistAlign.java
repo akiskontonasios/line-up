@@ -10,6 +10,9 @@ import java.util.regex.Pattern;
 
 import java.util.concurrent.*;
 
+import lineup.util.*;
+import lineup.util.Terminal.*;
+
 import static lineup.util.Fun.*;
 
 /**
@@ -65,7 +68,8 @@ public class DistAlign<T extends NtoNTranslation> {
     private PrintStream out = new PrintStream(System.out);
 
     private WordParser wordParser;
-    private Splitter splitter = new BluntSplitter();
+    private Splitter splitter;
+    private int maxTranslationDistance = 9;
 
     ExecutorService exec = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors(),
@@ -81,6 +85,7 @@ public class DistAlign<T extends NtoNTranslation> {
     public DistAlign(List<T> corpus, WordParser wordParser) {
         this.corpus = corpus;
         this.wordParser = wordParser;
+        this.splitter = new GermanEnglishSplitter(getWordParser());
 
         computeWordDistribution();
 
@@ -108,6 +113,36 @@ public class DistAlign<T extends NtoNTranslation> {
         List<PossibleTranslations> pts = ptsCache = associate(index, 6);
 
         printbr(index, pts);
+    }
+
+    public void printAligned(int index) {
+        NtoNTranslation translation = getCorpus().get(index);
+        List<PossibleTranslations> pts = ptsCache = associate(index, 6);
+        Tuple<Sentences, Sentences> sent = Sentences.wire(translation, pts, maxTranslationDistance, getWordParser());
+
+        try {
+            Tuple<Sentences, Sentences> aligned = getSplitter().insertLineBreaks(sent);
+            Tuple<List<Token>, List<Token>> tokens = tuple(aligned._1.getTokens(), aligned._2.getTokens());
+            LineBreak lineBreak = new LineBreak(42);
+            int breaks = aligned._1.lineBreaks();
+
+            System.out.println(aligned._1.displayString());
+            System.out.println(aligned._2.displayString());
+
+            for (int i = 0; i <= breaks; ++i) {
+                Tuple<List<Token>, List<Token>> src = splitAt(lineBreak, tokens._1);
+                Tuple<List<Token>, List<Token>> tgt = splitAt(lineBreak, tokens._2);
+
+                System.out.println("---------------");
+                System.out.println(Sentences.getValue(src._1));
+                System.out.println(Sentences.getValue(tgt._1));
+                System.out.println("---------------");
+
+                tokens = tuple(src._2, tgt._2);
+            }
+        } catch (AssertionError e) {
+            System.err.println("The algortihm failed on this one (" + e.getMessage() + ").");
+        }
     }
 
     public void details() {
