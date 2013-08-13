@@ -347,9 +347,9 @@ public class GermanEnglishSplitter extends Splitter {
 	private final List<String> englishArticles = Arrays.asList(
 		"a", "an","the", "these", "those");
 
-	public int minIndex(String word, Sentences en) {
+	public int minIndex(Word word, Sentences en) {
 		for (int i = 0; i < en.getTokens().size(); ++i) {
-			if (en.getTokens().get(i).getValue().equals(word)) {
+			if (en.getTokens().get(i).equals(word)) {
 				return i;
 			}
 		}
@@ -357,9 +357,9 @@ public class GermanEnglishSplitter extends Splitter {
 		return -1;
 	}
 
-	public int maxIndex(String word, Sentences en) {
+	public int maxIndex(Word word, Sentences en) {
 		for (int i = en.getTokens().size() - 1; i >= 0; --i) {
-			if (en.getTokens().get(i).getValue().equals(word)) {
+			if (en.getTokens().get(i).equals(word)) {
 				return i;
 			}
 		}
@@ -386,7 +386,7 @@ public class GermanEnglishSplitter extends Splitter {
 		int result = -1;
 
 		for (Word.Match match : candidates) {
-			int i = minIndex(match.getCandidate().getWord(), en);
+			int i = minIndex(match.getWord(), en);
 
 			if (i != -1 && (i < result || result == -1)) {
 				result = i;
@@ -416,7 +416,7 @@ public class GermanEnglishSplitter extends Splitter {
 		int result = -1;
 
 		for (Word.Match match : candidates) {
-			int i = maxIndex(match.getCandidate().getWord(), en);
+			int i = maxIndex(match.getWord(), en);
 
 			if (i > result) {
 				result = i;

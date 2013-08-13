@@ -56,7 +56,7 @@ public class Sentences {
 							if (token.getValue().equals(cand.getWord())) {
 								float srcPos = i / (float) getTokens().size();
 								float tgtPos = index / (float) matchingSentences.getTokens().size();
-								matches.add(new Word.Match(cand, tgtPos - srcPos));
+								matches.add(new Word.Match((Word) token, tgtPos - srcPos));
 								break;
 							}
 							index++;
@@ -154,7 +154,7 @@ public class Sentences {
 			if (token.isWord()) {
 				Word word = (Word) token;
 
-				if (word.getValue().equals(match.getCandidate().getWord())) {
+				if (word.equals(match.getWord())) {
 					return i;
 				}
 			}
@@ -307,6 +307,19 @@ public class Sentences {
 		}
 
 		return result;
+	}
+
+	public LineBreak lineBreaksAt(int i) {
+		int j = 0;
+		for (Token token : getTokens()) {
+			if (token.isLineBreak()) {
+				if (j++ == i) {
+					return (LineBreak) token;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	public static Tuple<Sentences, Sentences> wire(

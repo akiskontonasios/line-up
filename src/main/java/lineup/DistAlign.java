@@ -14,6 +14,7 @@ import lineup.util.*;
 import lineup.util.Terminal.*;
 
 import static lineup.util.Fun.*;
+import static lineup.util.Terminal.*;
 
 /**
  * Produces word alignments based on their distribution.
@@ -115,31 +116,117 @@ public class DistAlign<T extends NtoNTranslation> {
         printbr(index, pts);
     }
 
+    public Tuple<Sentences, Sentences> getSentences(int startIndex, int length) {
+        List<Token> noTokens = new LinkedList<Token>();
+        Sentences src = new Sentences(noTokens);
+        Sentences tgt = new Sentences(noTokens);
+
+        ptsCache = new LinkedList<PossibleTranslations>();
+
+        for (int i = 0; i < length; ++i) {
+            T tr = getCorpus().get(startIndex + i);
+            List<PossibleTranslations> pts = associate(startIndex + i, 6);
+            Tuple<Sentences, Sentences> sent = Sentences.wire(tr, pts, maxTranslationDistance, getWordParser());
+
+            ptsCache.addAll(pts);
+
+            if (i > 0) {
+                src.getTokens().add(new Punctuation(" "));
+                tgt.getTokens().add(new Punctuation(" "));
+            }
+            src.getTokens().addAll(sent._1.getTokens());
+            tgt.getTokens().addAll(sent._2.getTokens());
+        }
+
+        return tuple(src, tgt);
+    }
+
+    public void printRandomAligned() {
+        int index = random.nextInt(corpus.size());
+        out.println("============ " + index + " ============");
+        printAligned(index);
+    }
+
     public void printAligned(int index) {
+        printAligned(index, false);
+    }
+
+    public void printAligned(int index, boolean highlightRelated) {
         NtoNTranslation translation = getCorpus().get(index);
         List<PossibleTranslations> pts = ptsCache = associate(index, 6);
         Tuple<Sentences, Sentences> sent = Sentences.wire(translation, pts, maxTranslationDistance, getWordParser());
 
+        printAligned(sent, highlightRelated);
+    }
+
+    public void printAligned(Tuple<Sentences, Sentences> sent, boolean highlightRelated) {
         try {
             Tuple<Sentences, Sentences> aligned = getSplitter().insertLineBreaks(sent);
             Tuple<List<Token>, List<Token>> tokens = tuple(aligned._1.getTokens(), aligned._2.getTokens());
             LineBreak lineBreak = new LineBreak(42);
             int breaks = aligned._1.lineBreaks();
 
-            System.out.println(aligned._1.displayString());
-            System.out.println(aligned._2.displayString());
+            java.io.StringWriter line1 = new java.io.StringWriter();
+            java.io.StringWriter line2 = new java.io.StringWriter();
+            java.io.PrintWriter del = new java.io.PrintWriter(line1);
+            java.io.PrintWriter enl = new java.io.PrintWriter(line2);
 
             for (int i = 0; i <= breaks; ++i) {
                 Tuple<List<Token>, List<Token>> src = splitAt(lineBreak, tokens._1);
                 Tuple<List<Token>, List<Token>> tgt = splitAt(lineBreak, tokens._2);
 
-                System.out.println("---------------");
-                System.out.println(Sentences.getValue(src._1));
-                System.out.println(Sentences.getValue(tgt._1));
-                System.out.println("---------------");
+                String de = Sentences.getValue(src._1);
+                String en = Sentences.getValue(tgt._1);
+                int width = Math.max(de.length(), en.length());
+                boolean noRelations = true;
+
+                for (Token token : src._1) {
+                    if (token.isWord() && !((Word) token).getMatches().isEmpty()) {
+                        noRelations = false;
+                        break;
+                    }
+                }
+
+                if (width > 0) {
+                    if (highlightRelated) {
+                        if (noRelations) {
+                            del.print(startPaint(fgDefault));
+                            enl.print(startPaint(fgDefault));
+                        } else {
+                            del.print(startPaint(green));
+                            enl.print(startPaint(green));
+                        }
+                    }
+                    del.printf("%" + width + "s", de);
+                    enl.printf("%" + width + "s", en);
+
+                    del.print(stopPaint());
+                    enl.print(stopPaint());
+                }
+
+                String br = "|\u2424|";
+
+                if (i < breaks) {
+                    LineBreak deb = aligned._1.lineBreaksAt(i);
+                    LineBreak enb = aligned._2.lineBreaksAt(i);
+
+                    if (deb.getConfidence() >= 0.75) {
+                        del.print(painted(green, br));
+                        enl.print(painted(green, br));
+                    } else if (deb.getConfidence() >= 0.5) {
+                        del.print(painted(yellow, br));
+                        enl.print(painted(yellow, br));
+                    } else {
+                        del.print(painted(red, br));
+                        enl.print(painted(red, br));
+                    }
+                }
 
                 tokens = tuple(src._2, tgt._2);
             }
+
+            getOut().println(line1.toString());
+            getOut().println(line2.toString());
         } catch (AssertionError e) {
             System.err.println("The algortihm failed on this one (" + e.getMessage() + ").");
         }

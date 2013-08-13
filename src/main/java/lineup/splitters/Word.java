@@ -59,13 +59,13 @@ public class Word extends Token {
 		return super.hashCode() + 59 * getIndex();
 	}
 
-	public static class Match extends Tuple<Candidate, Float> {
+	public static class Match extends Tuple<Word, Float> {
 
-		public Match(Candidate candidate, Float distance) {
-			super(candidate, distance);
+		public Match(Word word, Float distance) {
+			super(word, distance);
 		}
 
-		public Candidate getCandidate() {
+		public Word getWord() {
 			return this._1;
 		}
 
@@ -75,7 +75,7 @@ public class Word extends Token {
 
 		@Override
 		public String toString() {
-			return String.format("Match(%s, %.2f)", getCandidate().toString(), getDistance());
+			return String.format("Match(%s, %.2f)", getWord().toString(), getDistance());
 		}
 	}
 }

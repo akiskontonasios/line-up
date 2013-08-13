@@ -158,21 +158,23 @@ public class Demo {
         }
 
         public void perform(String input) {
-            List<String> args = drop(1, List(input.split("\\s+")));
-
-            if (args.size() == 1) {
-                Scanner scanner = new Scanner(head(args));
-                if (scanner.hasNextInt()) {
-                    int index = scanner.nextInt();
-                    if (index >= 0 && index < corpus.size()) {
-                        dist.show(index);
+            Scanner scanner = new Scanner(input);
+            if (scanner.hasNext() && scanner.next() != null && scanner.hasNextInt()) {
+                int index = scanner.nextInt();
+                if (index >= 0 && index < corpus.size()) {
+                    if (scanner.hasNextInt()) {
+                        int length = scanner.nextInt();
+                        dist.printAligned(dist.getSentences(index, length), false);
                     } else {
-                        out.println("n out of range");
+                        dist.printAligned(index);
                     }
-                    return;
+                } else {
+                    out.println("n out of range");
                 }
+                return;
+            } else {
+                dist.printRandomAligned();
             }
-            dist.showRandom();
         }
     }
 
