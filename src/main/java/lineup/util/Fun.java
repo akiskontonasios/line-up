@@ -14,6 +14,40 @@ public class Fun {
         }
     }
 
+    public static <T> List<T> takeUntil(T item, List<T> list) {
+        List<T> result = new LinkedList<T>();
+
+        for (T i : list) {
+            if (i.equals(item)) {
+                break;
+            } else {
+                result.add(i);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Splits the list at the first occurence of a given delimiter.
+     * The delimiter will not be included in the result.
+     */
+    public static <T> Tuple<List<T>, List<T>> splitAt(T delim, List<T> list) {
+        List<T> prefix = new LinkedList<T>();
+        List<T> postfix = new LinkedList<T>();
+        boolean isPrefix = true;
+
+        for (T item : list) {
+            if (isPrefix && item.equals(delim)) {
+                isPrefix = false;
+            } else if (isPrefix) {
+                prefix.add(item);
+            } else {
+                postfix.add(item);
+            }
+        }
+        return tuple(prefix, postfix);
+    }
+
     public static <T> List<T> drop(int length, List<T> list) {
         if (length <= list.size()) {
             return list.subList(length, list.size());

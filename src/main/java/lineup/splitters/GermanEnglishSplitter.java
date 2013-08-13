@@ -9,6 +9,8 @@ import static lineup.util.Fun.*;
 
 public class GermanEnglishSplitter extends Splitter {
 
+	private double maxTranslationDistance = 9;
+
 	public GermanEnglishSplitter(WordParser wordParser) {
 		super(wordParser);
 	}
@@ -18,60 +20,100 @@ public class GermanEnglishSplitter extends Splitter {
 	}
 
 	public List<Relation> split(Relation pair, List<PossibleTranslations> relations) {
-		Sentences en = new Sentences(pair.getTarget(), getWordParser());
-		Sentences de = new Sentences(pair.getSource(), getWordParser(), relations, en);
+		Tuple<Sentences, Sentences> translation = toSentences(pair.getSource(), pair.getTarget(), relations);
 
-		de.validateMatches(0.25);
-		List<Tuple<Sentences, Sentences>> segments = processClusters(tuple(de, en));
+		return split(translation);
+	}
+
+	public List<Relation> split(NtoNTranslation tr, List<PossibleTranslations> pts) {
+		return split(new Relation(
+				mkString(tr.getSourceSentences(), " "), mkString(tr.getTargetSentences(), " ")), pts);
+	}
+
+	public List<Relation> split(Tuple<Sentences, Sentences> translation) {
+
+		List<Tuple<Sentences, Sentences>> segments = processClusters(translation);
 		List<Relation> result = new LinkedList<Relation>();
 
 		for (Tuple<Sentences, Sentences> seg : segments) {
 			result.add(new Relation(seg._1.getText(), seg._2.getText()));
 		}
 
+		int i = 0;
+		for (Tuple<Sentences, Sentences> seg : segments) {
+			List<Tuple<Sentences, Sentences>> subsegs = processClusters(seg, 1);
+			List<Relation> subresult = new LinkedList<Relation>();
+			if (subsegs.size() > 1) {
+				for (Tuple<Sentences, Sentences> subseg : subsegs) {
+					subresult.add(new Relation(subseg._1.getText(), subseg._2.getText()));
+				}
+				result.remove(i);
+				result.addAll(i, subresult);
+			}
+			++i;
+		}
+
 		return result;
+	}
+
+	public Tuple<Sentences, Sentences> insertLineBreaks(Tuple<Sentences, Sentences> translation) {
+
+		List<Tuple<Sentences, Sentences>> segments = processClusters(translation);
+		Sentences de = translation._1.copy();
+		Sentences en = translation._2.copy();
+		int deStart, enStart, deEnd = 0, enEnd = 0;
+		for (Tuple<Sentences, Sentences> seg : segments) {
+			deStart = deEnd;
+			enStart = enEnd;
+			deEnd = deStart + seg._1.getTokens().size();
+			enEnd = enStart + seg._2.getTokens().size();
+
+			if (deStart != 0 || enStart != 0) {
+				de.getTokens().add(deStart, new LineBreak(0.75));
+				en.getTokens().add(enStart, new LineBreak(0.75));
+				deEnd++; enEnd++;
+			}
+
+			List<Tuple<Sentences, Sentences>> subsegs = processClusters(seg, 1);
+			if (subsegs.size() > 1) {
+				int deOffset = 1, enOffset = 1;
+				Iterator<Tuple<Sentences, Sentences>> ss = subsegs.iterator();
+				while (ss.hasNext()) {
+					Tuple<Sentences, Sentences> subseg = ss.next();
+					if (!ss.hasNext()) {
+						break; // skip last
+					}
+					deOffset += subseg._1.getTokens().size();
+					enOffset += subseg._2.getTokens().size();
+					if (deOffset > 0) {
+						de.getTokens().add(deStart + deOffset++, new LineBreak(0.5));
+						en.getTokens().add(enStart + enOffset++, new LineBreak(0.5));
+						++deEnd;
+						++enEnd;
+					}
+				}
+			}
+		}
+
+		assert(de.lineBreaks() == en.lineBreaks());
+
+		return tuple(de, en);
+	}
+
+	public Tuple<Sentences, Sentences> toSentences(String src, String tgt, List<PossibleTranslations> pts) {
+		return Sentences.wire(src, tgt, pts, maxTranslationDistance, getWordParser());
+	}
+
+	public List<Tuple<Sentences, Sentences>> processClusters(Tuple<Sentences, Sentences> translation) {
+		return processClusters(translation, -1);
 	}
 
 	/**
 	 * Requires the first Sentences object to already be initialized with validated word matches.
 	 * Inserts linebreaks based on clusters.
 	 */
-	public List<Tuple<Sentences, Sentences>> processClusters(Tuple<Sentences, Sentences> translation) {
-		List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> segments =
-				new LinkedList<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>>();
-		List<Word> cluster = new LinkedList<Word>();
-		Word previous = null;
-
-		for (Token token : translation._1.getTokens()) {
-			if (token.isWord()) {
-				Word word = (Word) token;
-				boolean previousMatches = previous == null || !previous.getMatches().isEmpty();
-
-				if (previousMatches && !word.getMatches().isEmpty()) { // add to current cluster
-					cluster.add(word);
-				} else { // add breaks for current cluster and start new one
-					if (!cluster.isEmpty()) {
-						addSegment(segments, cluster, translation);
-					}
-
-					previous = null;
-					cluster.clear();
-				}
-			}
-		}
-
-		if (!cluster.isEmpty()) { // add possible trailing cluster
-			addSegment(segments, cluster, translation);
-		}
-
-		while (true) { // merge until all intersections are found
-			int size = segments.size();
-			segments = mergeIntersectingSegments(segments);
-
-			if (size == segments.size())
-				break;
-		}
-
+	public List<Tuple<Sentences, Sentences>> processClusters(Tuple<Sentences, Sentences> translation, int maxClusterSize) {
+		List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> segments = cluster(translation, true, maxClusterSize);
 		List<Tuple<Sentences, Sentences>> result = new LinkedList<Tuple<Sentences, Sentences>>();
 		int deIndex = 0;
 		int enIndex = 0;
@@ -107,6 +149,68 @@ public class GermanEnglishSplitter extends Splitter {
 		}
 
 		return result;
+	}
+
+	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> cluster(
+			Tuple<Sentences, Sentences> translation) {
+
+		return cluster(translation, true);
+	}
+
+	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> cluster(
+			Tuple<Sentences, Sentences> translation, boolean mergeIntersections) {
+
+		return cluster(translation, mergeIntersections, -1);
+	}
+
+	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> cluster(
+			Tuple<Sentences, Sentences> translation, boolean mergeIntersections,
+			int maxClusterSize) {
+
+		List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> segments =
+				new LinkedList<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>>();
+		List<Word> cluster = new LinkedList<Word>();
+		Word previous = null;
+
+		if (maxClusterSize < 0) {
+			maxClusterSize = Integer.MAX_VALUE;
+		}
+
+		for (Token token : translation._1.getTokens()) {
+			if (token.isWord()) {
+				Word word = (Word) token;
+				boolean previousMatches = previous == null || !previous.getMatches().isEmpty();
+
+				if (!word.getMatches().isEmpty()) { // add to current cluster
+					cluster.add(word);
+				}
+
+				// add breaks for current cluster and start new one
+				if (word.getMatches().isEmpty() || cluster.size() >= maxClusterSize) {
+					if (!cluster.isEmpty()) {
+						addSegment(segments, cluster, translation);
+					}
+					previous = null;
+					cluster.clear();
+				}
+
+				previous = word;
+			}
+		}
+
+		if (!cluster.isEmpty()) { // add possible trailing cluster
+			addSegment(segments, cluster, translation);
+		}
+
+		while (mergeIntersections) { // merge until all intersections are found
+			int size = segments.size();
+			segments = mergeIntersectingSegments(segments);
+
+			if (size == segments.size())
+				break;
+		}
+
+		return segments;
 	}
 
 	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> mergeIntersectingSegments(
@@ -330,6 +434,14 @@ public class GermanEnglishSplitter extends Splitter {
 		} else {
 			return NO_WORD;
 		}
+	}
+
+	public void setMaxTranslationDistance(double wordDistance) {
+		this.maxTranslationDistance = wordDistance;
+	}
+
+	public double getMaxTranslationDistance() {
+		return maxTranslationDistance;
 	}
 
 	public static final Word NO_WORD = new Word(-1, "");

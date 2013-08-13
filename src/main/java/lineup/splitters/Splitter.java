@@ -7,6 +7,8 @@ import lineup.WordParser;
 
 import java.util.List;
 
+import lineup.util.*;
+
 import static lineup.util.Fun.*;
 
 /**
@@ -25,6 +27,8 @@ public abstract class Splitter {
 	}
 
 	public abstract List<Relation> split(Relation pair, List<PossibleTranslations> relations);
+
+	public abstract Tuple<Sentences, Sentences> insertLineBreaks(Tuple<Sentences, Sentences> translation);
 
 	public List<Relation> split(NtoNTranslation tr, List<PossibleTranslations> relations) {
 		return split(

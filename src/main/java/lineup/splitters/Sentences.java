@@ -4,10 +4,13 @@ import lineup.*;
 import java.util.*;
 import java.util.regex.Matcher;
 
+import lineup.util.*;
+
 import static lineup.util.Fun.*;
+import static lineup.util.Terminal.*;
 
 public class Sentences {
-	
+
 	private List<Token> tokens = new ArrayList<Token>();
 
 	/**
@@ -99,11 +102,30 @@ public class Sentences {
 		return getTokens().isEmpty();
 	}
 
+	public void trimLineBreaks() {
+		boolean first = true;
+		Iterator<Token> tokens = getTokens().iterator();
+
+		while (tokens.hasNext()) {
+			Token token = tokens.next();
+
+			if (first) {
+				first = false;
+
+				if (token.isLineBreak()) { // leading linebreak
+					tokens.remove();
+				}
+			} else if (!tokens.hasNext() && token.isLineBreak()) { // trailing linebreak
+				tokens.remove();
+			}
+		}
+	}
+
 	/**
 	 * Only consider matches within less than maxDistance % (of sentense length) distance.
 	 * Everything farther away we cannot reasonably break.
 	 */
-	public void validateMatches(double maxDistance) {
+	public void validateMatches(double maxWordDistance, int targetLength) {
 		for (Token token : getTokens()) {
 			if (token.isWord()) {
 				Word word = (Word) token;
@@ -111,8 +133,10 @@ public class Sentences {
 
 				while (matches.hasNext()) {
 					Word.Match match = matches.next();
+					double dist = Math.abs(match.getDistance());
+					double meanDistance = (dist * getTokens().size() + dist * targetLength) / 2d;
 
-					if (Math.abs(match.getDistance()) > maxDistance) {
+					if (meanDistance > maxWordDistance) {
 						matches.remove();
 					}
 				}
@@ -120,8 +144,8 @@ public class Sentences {
 		}
 	}
 
-	public void validateMatches() {
-		validateMatches(0.25);
+	public void validateMatches(int targetLength) {
+		validateMatches(8.5, targetLength);
 	}
 
 	public int indexOf(Word.Match match) {
@@ -136,7 +160,7 @@ public class Sentences {
 			}
 			++i;
 		}
-		
+
 		return -1;
 	}
 
@@ -243,5 +267,67 @@ public class Sentences {
 	@Override
 	public String toString() {
 		return String.format("Sentences(%s)", mkString(tokens, " "));
+	}
+
+	public String getValue() {
+		return Sentences.getValue(getTokens());
+	}
+
+	public static String getValue(List<Token> tokens) {
+		StringBuilder sb = new StringBuilder();
+
+		for (Token token : tokens) {
+			sb.append(token.getValue());
+		}
+
+		return sb.toString();
+	}
+
+	public String displayString() {
+		StringBuilder sb = new StringBuilder();
+		int i = 1;
+
+		for (Token token : getTokens()) {
+			if (token.isLineBreak()) {
+				sb.append(painted(green, "|" + i++ + "|"));
+			} else {
+				sb.append(token.getValue());
+			}
+		}
+
+		return sb.toString();
+	}
+
+	public int lineBreaks() {
+		int result = 0;
+		for (Token token : getTokens()) {
+			if (token.isLineBreak()) {
+				++result;
+			}
+		}
+
+		return result;
+	}
+
+	public static Tuple<Sentences, Sentences> wire(
+			String src, String tgt, List<PossibleTranslations> pts,
+			double maxTranslationDistance, WordParser wordParser) {
+
+		Sentences en = new Sentences(tgt, wordParser);
+		Sentences de = new Sentences(src, wordParser, pts, en);
+
+		de.validateMatches(maxTranslationDistance, en.getTokens().size());
+
+		return tuple(de, en);
+	}
+
+	public static Tuple<Sentences, Sentences> wire(
+			NtoNTranslation translation, List<PossibleTranslations> pts,
+			double maxTranslationDistance, WordParser wordParser) {
+
+		return wire(
+			mkString(translation.getSourceSentences(), " "),
+			mkString(translation.getTargetSentences(), " "),
+			pts, maxTranslationDistance, wordParser);
 	}
 }

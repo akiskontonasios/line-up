@@ -5,6 +5,8 @@ import lineup.PossibleTranslations;
 
 import java.util.*;
 
+import lineup.util.*;
+
 import static lineup.util.Fun.*;
 
 /**
@@ -15,6 +17,10 @@ public class BluntSplitter extends Splitter {
 	public List<Relation> split(Relation pair, List<PossibleTranslations> relations) {
 		return splitFurther(java.util.Arrays.asList(pair), relations);
 	}
+
+    public Tuple<Sentences, Sentences> insertLineBreaks(Tuple<Sentences, Sentences> translation) {
+        return translation; // @TODO implement
+    }
 
 	public List<Relation> splitFurther(List<Relation> parts, List<PossibleTranslations> relations) {
         List<Relation> splits = new LinkedList<Relation>();
