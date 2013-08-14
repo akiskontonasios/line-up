@@ -188,6 +188,17 @@ public class Sentences {
 		}
 	}
 
+	public Word wordsAt(int i) {
+		int j = 0;
+		for (Token token : getTokens()) {
+			if (token.isWord() && j++ == i) {
+				return (Word) token;
+			}
+		}
+
+		return null;
+	}
+
 	public Word lastWord() {
 		for (int i = getTokens().size() - 1; i >= 0; --i) {
 			Word word = wordAt(i);

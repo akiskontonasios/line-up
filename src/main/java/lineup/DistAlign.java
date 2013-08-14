@@ -146,6 +146,11 @@ public class DistAlign<T extends NtoNTranslation> {
 
         for (int i = 1; i < length; ++i) {
             pts.addAll(associate(startIndex + i, 6));
+            try {
+                Thread.sleep(250); // concurrency bug workaround
+            } catch (InterruptedException e) {
+                System.out.println("[warning] " + e.getMessage());
+            }
         }
 
         StringBuilder de = new StringBuilder();
@@ -713,8 +718,14 @@ public class DistAlign<T extends NtoNTranslation> {
         PossibleTranslations maxPt = null;
         double minProb = 0;
         int maxCount = 0;
-        int wordCount = targetWordCounts.get(word);
+        int wordCount = 0;
         List<Double> probabilities = new LinkedList<Double>();
+
+        if (targetWordCounts.containsKey(word)) {
+            wordCount = targetWordCounts.get(word);
+        } else {
+            System.err.println("\n[warning] no word count for '" + word + "'");
+        }
 
         if (pure) {
             for (PossibleTranslations pt : pts) {
@@ -733,7 +744,12 @@ public class DistAlign<T extends NtoNTranslation> {
         Collections.sort(probabilities); // sorted ascending
         Collections.reverse(probabilities); // sort descending (highest probabilties first)
         probabilities = take(wordCount, probabilities);
-        minProb = probabilities.get(probabilities.size() - 1);
+        minProb = 1000;
+
+        if (probabilities.size() > 0) {
+            minProb = probabilities.get(probabilities.size() - 1);
+        }
+
         boolean minNaN = Double.isNaN(minProb);
 
         for (PossibleTranslations pt : pts) {
@@ -840,7 +856,7 @@ public class DistAlign<T extends NtoNTranslation> {
             final int limit, final boolean reverse) {
 
         List<PossibleTranslations> translations = new LinkedList<PossibleTranslations>();
-        List<Future<PossibleTranslations>> tasks = new LinkedList<Future<PossibleTranslations>>();
+        List<Callable<PossibleTranslations>> tasks = new LinkedList<Callable<PossibleTranslations>>();
 
         for (String source : sourceSentences) {
             Matcher m = getWordParser().getWordPattern().matcher(source);
@@ -852,22 +868,22 @@ public class DistAlign<T extends NtoNTranslation> {
                         return possibleTranslations(word, targetSentences, limit, reverse);
                     }
                 };
-                tasks.add(exec.submit(task));
+                tasks.add(task);
             }
         }
 
-        for (Future<PossibleTranslations> task : tasks) {
-            PossibleTranslations value = null;
-            while (value == null) {
-                try {
-                    value = task.get();
-                } catch (InterruptedException e) {
-                    System.out.println("[warning] " + e.getMessage());
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
+        int tries = 0;
+        while (tries++ < 3) {
+            try {
+                for (Future<PossibleTranslations> task : exec.invokeAll(tasks)) {
+                    translations.add(task.get());
                 }
+                break;
+            } catch (InterruptedException e) {
+                System.out.println("[warning] interrupted: " + e.getMessage());
+            } catch (ExecutionException e) {
+                e.printStackTrace();
             }
-            translations.add(value);
         }
 
         return translations;

@@ -1,44 +1,79 @@
 package lineup
 
-import opus.Europarl2
+import lineup.splitters._
+import opus.Europarl3
 
+import org.scalatest.Tag
 import org.scalatest.FunSpec
 import org.scalatest.matchers.ShouldMatchers
+
+object Extrinistic3 extends Tag("Extrinistic3")
+object Intrinistic3 extends Tag("Intrinistic3")
 
 class Europarl3Evaluation extends FunSpec with ShouldMatchers {
 
 	import Europarl3Evaluation._
+
+	describe("Extrinistic Accuracy") {
+    it("should be measured", Extrinistic3) {
+      import collection.JavaConversions._
+
+      val dist = new DistAlign(translations)
+      val n = translations.size
+      var f = 0
+      var skip = 0
+
+      println("Extrinistic accuracy of Europarl3: ")
+
+      for (i <- 0 until (n - 1)) {
+        val progress = "%.2f".format((i.asInstanceOf[Float] / n) * 100) + "%"
+        val acc = if (i == 0) "?" else math.round((f.asInstanceOf[Float] / (i - skip)) * 100) + "%"
+        val msg = progress + " done (" + i + " / " + n + "). Current accuracy is " + acc + "."
+        print(msg)
+
+        val sent = dist.getSentences2(i, 2)
+        val src = new Sentences(dist.getCorpus.get(i).getSourceSentences.mkString(" "), dist.getWordParser)
+        val tgt = new Sentences(dist.getCorpus.get(i).getTargetSentences.mkString(" "), dist.getWordParser)
+
+        if (src.getTokens.exists(_.isWord) && tgt.getTokens.exists(_.isWord)) {
+          val aligned = dist.getSplitter().insertLineBreaks(sent);
+
+          // now check if a possible linebreak has been found at the end of the sentence
+          val srcEndIndex = aligned._1.indexOf(src.lastWord)
+          val srcTail = aligned._1.getTokens.drop(srcEndIndex + 1).takeWhile(_ != LineBreak.instance)
+          val srcFound = srcTail.forall(!_.isWord)
+
+          val tgtEndIndex = aligned._2.indexOf(tgt.lastWord)
+          val tgtTail = aligned._2.getTokens.drop(tgtEndIndex + 1).takeWhile(_ != LineBreak.instance)
+          val tgtFound = tgtTail.forall(!_.isWord)
+
+          if (srcEndIndex == -1 || tgtEndIndex == -1) {
+            println()
+            println(aligned._1.displayString)
+            println(aligned._2.displayString)
+            println()
+          }
+
+          srcEndIndex should not be (-1)
+          tgtEndIndex should not be (-1)
+
+          if (srcFound && tgtFound) {
+            f += 1
+          }
+        } else { // invalid sentence such as 592 in EuroparlV2
+          skip += 1
+        }
+
+        (0 to (msg.size)).map(_ => print("\b")).map(_ => print(" ")).map(_ => print("\b"))
+      }
+      println()
+
+      info("Correctly identified %d of %d (%.2f %%) sentence boundaries.".format(
+        f, n, (f.asInstanceOf[Float] / (n - skip)) * 100))
+    }
+  }
 }
 
 object Europarl3Evaluation {
 	val translations = Europarl3.translations
-
-	class CustomWordParser extends WordParser {
-		import java.util.regex._
-
-		this setWordPattern Pattern.compile(
-				"(\\d+(th|rd|nd|st|s))" + "|" +
-				"(i\\.e\\.|e\\.g\\.)" + "|" +
-				"\\d+-year(-old?)?" + "|" +
-				"((\\d+([\\.\\-_]\\d+)?)(_(%|a\\.m\\.?|p\\.m\\.?))?)" + "|" +
-				"(\\p{L}[\\p{L}_\\-0-9]*('s)?)");
-
-		// public boolean declension(String a, String b) {
-		override def declension(a: String, b: String): Boolean = {
-			(math.abs(a.size - b.size) <= 3 && a.replaceAll("'s$", "") == b.replaceAll("'s$", "")) ||
-				super.declension(a, b)
-		}
-	}
-
-	def tr2(i: Int) = {
-		val t1 = getCorpus.get(i)
-		val p1 = associate(i, 6, 3, true)
-		val t2 = getCorpus.get(i + 1)
-		val p2 = associate(i + 1, 6, 3, true)
-		val tp1 = splitter.toSentences(t1.getSourceSentences.mkString(" "), t1.getTargetSentences.mkString(" "), p1)
-		val tp2 = splitter.toSentences(t2.getSourceSentences.mkString(" "), t2.getTargetSentences.mkString(" "), p2)
-		
-		tp1._1.getTokens.addAll(tp2._1.getTokens); tp1._2.getTokens.addAll(tp2._2.getTokens)
-		tp1
-	}
 }

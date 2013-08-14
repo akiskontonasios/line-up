@@ -1,7 +1,9 @@
 package lineup.splitters;
 
 public class LineBreak extends Token {
-	
+
+	public static final LineBreak instance = new LineBreak(42);
+
 	private double confidence;
 
 	public LineBreak(double confidence) {

@@ -46,7 +46,7 @@ public class Word extends Token {
 
 	@Override
 	public String toString() {
-		return String.format("W(%s)", getValue());
+		return String.format("W(%d, %s)", getIndex(), getValue());
 	}
 
 	@Override
