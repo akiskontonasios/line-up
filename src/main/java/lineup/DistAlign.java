@@ -445,6 +445,10 @@ public class DistAlign<T extends NtoNTranslation> {
         List<PossibleTranslations> matches = matches(index, limit);
         Set<Relation> relations = findRelatedWords(
                 getCorpus().get(index).getSourceSentences(), getCorpus().get(index).getTargetSentences());
+        Map<String, Integer> targetWordCounts = new HashMap<String, Integer>();
+
+        addToDistribution(getCorpus().get(index).getTargetSentences(), targetWordCounts);
+
         for (PossibleTranslations pt : matches) {
             for (Relation rel : relations) {
                 if (rel.getSource().equals(pt.getSourceWord())) {
@@ -478,7 +482,7 @@ public class DistAlign<T extends NtoNTranslation> {
         }
 
         if (retainMostLikely) {
-            pruneMatches(matches, false);
+            pruneMatches(matches, targetWordCounts, false);
             if (prune < limit && prune != -1) {
                 for (PossibleTranslations pt : matches) {
                     pt.prune(prune);
@@ -641,11 +645,16 @@ public class DistAlign<T extends NtoNTranslation> {
         return results;
     }
 
-    public List<PossibleTranslations> pruneMatches(List<PossibleTranslations> matches) {
-        return pruneMatches(matches, true);
+    public List<PossibleTranslations> pruneMatches(
+            List<PossibleTranslations> matches, Map<String, Integer> targetWordCounts) {
+        return pruneMatches(matches, targetWordCounts, true);
     }
 
-    public List<PossibleTranslations> pruneMatches(List<PossibleTranslations> matches, boolean pure) {
+    public List<PossibleTranslations> pruneMatches(
+            List<PossibleTranslations> matches,
+            Map<String, Integer> targetWordCounts,
+            boolean pure) {
+
         List<PossibleTranslations> pts = pure ? new LinkedList<PossibleTranslations>() : matches;
 
         if (pure) {
@@ -664,17 +673,24 @@ public class DistAlign<T extends NtoNTranslation> {
         }
 
         for (String word : words) {
-            retainMostLikely(word, pts, false);
+            retainMostLikely(word, pts, targetWordCounts, false);
         }
 
         return pts;
     }
 
-    protected List<PossibleTranslations> retainMostLikely(String word, List<PossibleTranslations> pts, boolean pure) {
+    protected List<PossibleTranslations> retainMostLikely(
+            String word,
+            List<PossibleTranslations> pts,
+            Map<String, Integer> targetWordCounts,
+            boolean pure) {
+
         List<PossibleTranslations> result = pure ? new LinkedList<PossibleTranslations>() : pts;
         PossibleTranslations maxPt = null;
-        double maxProb = 0;
+        double minProb = 0;
         int maxCount = 0;
+        int wordCount = targetWordCounts.get(word);
+        List<Double> probabilities = new LinkedList<Double>();
 
         if (pure) {
             for (PossibleTranslations pt : pts) {
@@ -685,21 +701,25 @@ public class DistAlign<T extends NtoNTranslation> {
         for (PossibleTranslations pt : result) {
             for (Candidate candidate : pt.getCandidates()) {
                 if (candidate.getWord().equals(word)) {
-                    if (candidate.getProbability() > maxProb) {
-                        maxProb = candidate.getProbability();
-                    }
+                    probabilities.add(candidate.getProbability());
                 }
             }
         }
+
+        Collections.sort(probabilities); // sorted ascending
+        Collections.reverse(probabilities); // sort descending (highest probabilties first)
+        probabilities = take(wordCount, probabilities);
+        minProb = probabilities.get(probabilities.size() - 1);
+        boolean minNaN = Double.isNaN(minProb);
 
         for (PossibleTranslations pt : pts) {
             Iterator<Candidate> cands = pt.getCandidates().iterator();
             while (cands.hasNext()) {
                 Candidate cand = cands.next();
                 if (cand.getWord().equals(word)) {
-                    if (cand.getProbability() < maxProb) {
+                    if (cand.getProbability() < minProb || (minNaN && !Double.isNaN(cand.getProbability()))) {
                         cands.remove();
-                    } else if (cand.getProbability() == maxProb && maxCount++ >= 1) {
+                    } else if (cand.getProbability() >= minProb && maxCount++ >= wordCount) {
                         cands.remove();
                     }
                 }
