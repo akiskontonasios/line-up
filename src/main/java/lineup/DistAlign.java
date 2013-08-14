@@ -70,7 +70,7 @@ public class DistAlign<T extends NtoNTranslation> {
 
     private WordParser wordParser;
     private Splitter splitter;
-    private int maxTranslationDistance = 9;
+    private double maxTranslationDistance = 9;
 
     ExecutorService exec = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors(),
@@ -139,6 +139,30 @@ public class DistAlign<T extends NtoNTranslation> {
         }
 
         return tuple(src, tgt);
+    }
+
+    public Tuple<Sentences, Sentences> getSentences2(int startIndex, int length) {
+        List<PossibleTranslations> pts = associate(startIndex, 6);
+
+        for (int i = 1; i < length; ++i) {
+            pts.addAll(associate(startIndex + i, 6));
+        }
+
+        StringBuilder de = new StringBuilder();
+        StringBuilder en = new StringBuilder();
+
+        for (int i = 0; i < length; ++i) {
+            T tr = getCorpus().get(startIndex + i);
+
+            if (i > 0) {
+                de.append(" ");
+                en.append(" ");
+            }
+            de.append(mkString(tr.getSourceSentences(), " "));
+            en.append(mkString(tr.getTargetSentences(), " "));
+        }
+
+        return Sentences.wire(de.toString(), en.toString(), pts, getMaxTranslationDistance(), getWordParser());
     }
 
     public void printRandomAligned() {
@@ -993,6 +1017,14 @@ public class DistAlign<T extends NtoNTranslation> {
 
     public List<String> getTargetBlacklist() {
         return targetBlacklist;
+    }
+
+    public void setMaxTranslationDistance(double distance) {
+        this.maxTranslationDistance = distance;
+    }
+
+    public double getMaxTranslationDistance() {
+        return maxTranslationDistance;
     }
 
     public int getSourceWordCount() {
