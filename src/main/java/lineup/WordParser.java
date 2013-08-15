@@ -76,9 +76,9 @@ public class WordParser {
     }
 
     public boolean declension(char a, char b) {
-        return  ((a == 'ä' && b == 'a') || (a == 'a' && b == 'ä')) ||
-                ((a == 'ü' && b == 'u') || (a == 'u' && b == 'ü')) ||
-                ((a == 'ö' && b == 'o') || (a == 'o' && b == 'ö'));
+        return  ((a == '\u00E4' && b == 'a') || (a == 'a' && b == '\u00E4')) || // ä <-> a
+                ((a == '\u00FC' && b == 'u') || (a == 'u' && b == '\u00FC')) || // ü <-> u
+                ((a == '\u00F6' && b == 'o') || (a == 'o' && b == '\u00F6'));   // ö <-> o
     }
 
     public Pattern containsWordPattern(String word) {
