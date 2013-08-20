@@ -1,8 +1,6 @@
 package lineup;
 
-import lineup.splitters.GermanEnglishSplitter;
 import lineup.splitters.Sentences;
-import lineup.splitters.Splitter;
 import lineup.util.Relation;
 import lineup.util.Tuple;
 
@@ -14,41 +12,11 @@ import static lineup.util.Fun.mkString;
 import static lineup.util.Fun.take;
 
 /**
- * Produces word alignments based on their distribution.
- *
- * Idea: remove confident matches from sentences; try to infer probability of translations for the rest of the words.
- *       Also consolidate global translation possibilities?
- *
- * Sentences:
- *
- *  de: Das Parlament erhebt sich zu einer Schweigeminute.
- *  en: The House rose and observed a minute's silence.
- *
- * Relations:
- *
- *  Das             =>
- *  Parlament       => House
- *  erhebt          => rose, observed
- *  sich            =>
- *  zu              => The
- *  einer           =>
- *  Schweigeminute  => silence, minute
- *
- * Which leaves:
- *
- *  de: Das [...] sich [...] einer [...]
- *  en: [...] and [...] a [...]
- *
- * Where translationProbability("einer", "and") < translationProbability("einer", "a"),
- * hence we infer that:
- *
- *  einer           => a
- *
- * or sth?
+ * Produces word alignments based on a statistical model which works using a sentence-aligned corpus.
  *
  * @author Markus Kahl
  */
-public class DistAlign<T extends NtoNTranslation> {
+public class StatAlign<T extends NtoNTranslation> implements Aligner {
 
     private List<T> corpus;
 
@@ -66,8 +34,6 @@ public class DistAlign<T extends NtoNTranslation> {
     private Map<String, Set<String>> tgtDeclCache = new HashMap<String, Set<String>>();
 
     private WordParser wordParser;
-    private Splitter splitter;
-    private double maxTranslationDistance = 9;
 
     ExecutorService exec = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors(),
@@ -80,28 +46,44 @@ public class DistAlign<T extends NtoNTranslation> {
             }
         });
 
-    public DistAlign(List<T> corpus, WordParser wordParser) {
+    public StatAlign(List<T> corpus, WordParser wordParser) {
         this.corpus = corpus;
         this.wordParser = wordParser;
-        this.splitter = new GermanEnglishSplitter(getWordParser());
 
         computeWordDistribution();
 
         sourceWordCount = sumValues(getSourceWords());
         targetWordCount = sumValues(getTargetWords());
+
+        initBlacklists();
     }
 
-    public DistAlign(List<T> corpus) {
+    public StatAlign(List<T> corpus) {
         this(corpus, WordParser.instance);
     }
 
+    protected void initBlacklists() {
+        if (corpus == null || corpus.isEmpty())
+            throw new IllegalArgumentException("StatAlign requires a non-empty corpus.");
+
+        String tgtLang = corpus.get(0).getTargetLanguage();
+
+        if ("en".equals(tgtLang)) {
+            getTargetBlacklist().add("s"); // s is only a particle indicating genitive
+        }
+    }
+
     public Tuple<Sentences, Sentences> getSentences(int startIndex, int length) {
+        return getSentences(startIndex, length, 9);
+    }
+
+    public Tuple<Sentences, Sentences> getSentences(int startIndex, int length, double maxTranslationDistance) {
         List<PossibleTranslations> pts = associate(startIndex, 6);
 
         for (int i = 1; i < length; ++i) {
             pts.addAll(associate(startIndex + i, 6));
             try {
-                Thread.sleep(250); // concurrency bug workaround
+                Thread.sleep(250); // concurrency bug (during evaluation) workaround
             } catch (InterruptedException e) {
                 System.out.println("[warning] " + e.getMessage());
             }
@@ -121,25 +103,19 @@ public class DistAlign<T extends NtoNTranslation> {
             en.append(mkString(tr.getTargetSentences(), " "));
         }
 
-        return Sentences.wire(de.toString(), en.toString(), pts, getMaxTranslationDistance(), getWordParser());
-    }
-
-    public List<Relation> split(int index) {
-        return split(index, associate(index, 6));
-    }
-
-    public List<Relation> split(int index, List<PossibleTranslations> pts) {
-        NtoNTranslation tr = getCorpus().get(index);
-
-        return splitter.split(tr, pts);
+        return Sentences.wire(de.toString(), en.toString(), pts, maxTranslationDistance, getWordParser());
     }
 
     public List<PossibleTranslations> associate(int index) {
-        return associate(index, 4);
+        return associate(index, 6);
+    }
+
+    public List<PossibleTranslations> associate(NtoNTranslation translation) {
+        return associate(translation, 6, 3, true);
     }
 
     public List<PossibleTranslations> associateRetainingAll(int index) {
-        return associate(index, 4, 3, false);
+        return associate(index, 6, 3, false);
     }
 
     public List<PossibleTranslations> associate(int index, int limit) {
@@ -147,12 +123,15 @@ public class DistAlign<T extends NtoNTranslation> {
     }
 
     public List<PossibleTranslations> associate(int index, int limit, int prune, boolean retainMostLikely) {
-        List<PossibleTranslations> matches = matches(index, limit);
-        Set<Relation> relations = findRelatedWords(
-                getCorpus().get(index).getSourceSentences(), getCorpus().get(index).getTargetSentences());
+        return associate(getCorpus().get(index), limit, prune, retainMostLikely);
+    }
+
+    public List<PossibleTranslations> associate(NtoNTranslation translation, int limit, int prune, boolean retainMostLikely) {
+        List<PossibleTranslations> matches = matches(translation, limit);
+        Set<Relation> relations = findRelatedWords(translation.getSourceSentences(), translation.getTargetSentences());
         Map<String, Integer> targetWordCounts = new HashMap<String, Integer>();
 
-        addToDistribution(getCorpus().get(index).getTargetSentences(), targetWordCounts);
+        addToDistribution(translation.getTargetSentences(), targetWordCounts);
 
         for (PossibleTranslations pt : matches) {
             for (Relation rel : relations) {
@@ -203,9 +182,13 @@ public class DistAlign<T extends NtoNTranslation> {
     }
 
     public List<PossibleTranslations> matches(int index, int limit) {
+        return matches(getCorpus().get(index), limit);
+    }
+
+    public List<PossibleTranslations> matches(NtoNTranslation translation, int limit) {
         List<PossibleTranslations> result = new LinkedList<PossibleTranslations>();
-        List<PossibleTranslations> forth = possibleTranslations(getCorpus().get(index), limit != -1 ? limit : 3);
-        List<PossibleTranslations> back = reversePossibleTranslations(getCorpus().get(index), limit != -1 ? limit : 3);
+        List<PossibleTranslations> forth = possibleTranslations(translation, limit != -1 ? limit : 3);
+        List<PossibleTranslations> back = reversePossibleTranslations(translation, limit != -1 ? limit : 3);
 
         for (PossibleTranslations ptForth : forth) {
             List<Candidate> candidates = new LinkedList<Candidate>();
@@ -591,14 +574,6 @@ public class DistAlign<T extends NtoNTranslation> {
         return targetBlacklist;
     }
 
-    public void setMaxTranslationDistance(double distance) {
-        this.maxTranslationDistance = distance;
-    }
-
-    public double getMaxTranslationDistance() {
-        return maxTranslationDistance;
-    }
-
     public int getSourceWordCount() {
         return sourceWordCount;
     }
@@ -613,13 +588,5 @@ public class DistAlign<T extends NtoNTranslation> {
 
     public WordParser getWordParser() {
         return wordParser;
-    }
-
-    public void setSplitter(Splitter splitter) {
-        this.splitter = splitter;
-    }
-
-    public Splitter getSplitter() {
-        return splitter;
     }
 }

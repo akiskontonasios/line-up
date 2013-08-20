@@ -20,7 +20,8 @@ import static lineup.util.Terminal.red;
 public class Demo {
 
     private List<Translation> corpus;
-    private DistAlign<Translation> dist;
+    private StatAlign<Translation> stat;
+    private Splitter splitter;
     private BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
     private Collection<Command> commands = new LinkedList<Command>();
     private PrintStream out;
@@ -28,13 +29,16 @@ public class Demo {
     private Random random = new Random();
     private List<PossibleTranslations> ptsCache;
 
+    private double maxTranslationDistance = 9;
+
     public Demo() {
-        this(Alignment.byWordDistribution(loadCorpus()));
+        this(new StatAlign<Translation>(loadCorpus()));
     }
 
-    public Demo(DistAlign<Translation> aligner) {
+    public Demo(StatAlign<Translation> aligner) {
         corpus = aligner.getCorpus();
-        dist = aligner;
+        stat = aligner;
+        splitter = new GermanEnglishSplitter(stat.getWordParser());
 
         commands.addAll(List(new Exit(), new Help(), new Corpus(), new Show(), new Break(), new Details()));
 
@@ -44,7 +48,6 @@ public class Demo {
             System.err.println("Unsupported encoding: " + e.getMessage());
             System.exit(1);
         }
-        dist.setSplitter(new GermanEnglishSplitter(dist.getWordParser()));
     }
 
     public static List<Translation> loadCorpus() {
@@ -120,6 +123,16 @@ public class Demo {
         return null;
     }
 
+    public List<Relation> split(int index) {
+        return split(index, stat.associate(index, 6));
+    }
+
+    public List<Relation> split(int index, List<PossibleTranslations> pts) {
+        NtoNTranslation tr = stat.getCorpus().get(index);
+
+        return getSplitter().split(tr, pts);
+    }
+
     public void printRandomAligned() {
         int index = random.nextInt(corpus.size());
         out.println("============ " + index + " ============");
@@ -131,17 +144,17 @@ public class Demo {
 
         out.println("============ " + index + " ============");
 
-        List<PossibleTranslations> pts = ptsCache = dist.associate(index, 6);
+        List<PossibleTranslations> pts = ptsCache = stat.associate(index, 6);
 
         printbr(index, pts);
     }
 
     public void showRandom() {
-        show(random.nextInt(dist.getCorpus().size()));
+        show(random.nextInt(stat.getCorpus().size()));
     }
 
     public void printSentence(int index) {
-        NtoNTranslation tr = dist.getCorpus().get(index);
+        NtoNTranslation tr = stat.getCorpus().get(index);
         out.println(mkString(tr.getSourceSentences(), " "));
         out.println(mkString(tr.getTargetSentences(), " "));
     }
@@ -151,17 +164,17 @@ public class Demo {
     }
 
     public void printAligned(int index, boolean highlightRelated) {
-        NtoNTranslation translation = dist.getCorpus().get(index);
-        List<PossibleTranslations> pts = ptsCache = dist.associate(index, 6);
-        Tuple<Sentences, Sentences> sent = Sentences.wire(translation, pts,
-                dist.getMaxTranslationDistance(), dist.getWordParser());
+        NtoNTranslation translation = stat.getCorpus().get(index);
+        List<PossibleTranslations> pts = ptsCache = stat.associate(translation);
+        Tuple<Sentences, Sentences> sent = Sentences.wire(
+                translation, pts, getMaxTranslationDistance(), stat.getWordParser());
 
         printAligned(sent, highlightRelated);
     }
 
     public void printAligned(Tuple<Sentences, Sentences> sent, boolean highlightRelated) {
         try {
-            Tuple<Sentences, Sentences> aligned = dist.getSplitter().insertLineBreaks(sent);
+            Tuple<Sentences, Sentences> aligned = getSplitter().insertLineBreaks(sent);
             Tuple<List<Token>, List<Token>> tokens = tuple(aligned._1.getTokens(), aligned._2.getTokens());
             LineBreak lineBreak = new LineBreak(42);
             int breaks = aligned._1.lineBreaks();
@@ -259,11 +272,11 @@ public class Demo {
     }
 
     public void printbr(int index) {
-        printbr(index, dist.associate(index, 6));
+        printbr(index, stat.associate(index, 6));
     }
 
     public void printbr(int index, List<PossibleTranslations> pts) {
-        for (Relation part : dist.split(index, pts)) {
+        for (Relation part : split(index, pts)) {
             String src = part.getSource().trim();
             String tgt = part.getTarget().trim();
             int line = Math.max(src.length(), tgt.length());
@@ -291,6 +304,18 @@ public class Demo {
 
     public PrintStream getOut() {
         return out;
+    }
+
+    public Splitter getSplitter() {
+        return splitter;
+    }
+
+    public double getMaxTranslationDistance() {
+        return maxTranslationDistance;
+    }
+
+    public void setMaxTranslationDistance(double maxTranslationDistance) {
+        this.maxTranslationDistance = maxTranslationDistance;
     }
 
     interface Command {
@@ -354,7 +379,7 @@ public class Demo {
                 if (index >= 0 && index < corpus.size()) {
                     if (scanner.hasNextInt()) {
                         int length = scanner.nextInt();
-                        printAligned(dist.getSentences(index, length), false);
+                        printAligned(stat.getSentences(index, length), false);
                     } else {
                         printAligned(index);
                     }

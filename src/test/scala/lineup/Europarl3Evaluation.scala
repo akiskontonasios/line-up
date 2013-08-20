@@ -18,7 +18,7 @@ class Europarl3Evaluation extends FunSpec with ShouldMatchers {
     it("should be measured", Extrinistic3) {
       import collection.JavaConversions._
 
-      val dist = new DistAlign(translations)
+      val stat = new StatAlign(translations)
       val n = translations.size
       var f = 0
       var skip = 0
@@ -31,12 +31,12 @@ class Europarl3Evaluation extends FunSpec with ShouldMatchers {
         val msg = progress + " done (" + i + " / " + n + "). Current accuracy is " + acc + "."
         print(msg)
 
-        val sent = dist.getSentences(i, 2)
-        val src = new Sentences(dist.getCorpus.get(i).getSourceSentences.mkString(" "), dist.getWordParser)
-        val tgt = new Sentences(dist.getCorpus.get(i).getTargetSentences.mkString(" "), dist.getWordParser)
+        val sent = stat.getSentences(i, 2)
+        val src = new Sentences(stat.getCorpus.get(i).getSourceSentences.mkString(" "), stat.getWordParser)
+        val tgt = new Sentences(stat.getCorpus.get(i).getTargetSentences.mkString(" "), stat.getWordParser)
 
         if (src.getTokens.exists(_.isWord) && tgt.getTokens.exists(_.isWord)) {
-          val aligned = dist.getSplitter().insertLineBreaks(sent);
+          val aligned = stat.getSplitter().insertLineBreaks(sent);
 
           // now check if a possible linebreak has been found at the end of the sentence
           val srcEndIndex = aligned._1.indexOf(src.lastWord)

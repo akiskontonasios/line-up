@@ -34,7 +34,7 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
     it("should be measured", Extrinistic2) {
       import collection.JavaConversions._
 
-      val dist = new DistAlign(
+      val stat = new StatAlign(
         java.util.Arrays.asList(translations.map(new Translation(_)): _*),
         new CustomWordParser)
       val n = translations.size
@@ -49,12 +49,12 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
         print(progress)
         print(" done. Current accuracy is " + acc + ".")
 
-        val sent = dist.getSentences(i, 2)
-        val src = new Sentences(dist.getCorpus.get(i).getSourceSentences.mkString(" "), dist.getWordParser)
-        val tgt = new Sentences(dist.getCorpus.get(i).getTargetSentences.mkString(" "), dist.getWordParser)
+        val sent = stat.getSentences(i, 2)
+        val src = new Sentences(stat.getCorpus.get(i).getSourceSentences.mkString(" "), stat.getWordParser)
+        val tgt = new Sentences(stat.getCorpus.get(i).getTargetSentences.mkString(" "), stat.getWordParser)
 
         if (src.getTokens.exists(_.isWord) && tgt.getTokens.exists(_.isWord)) {
-          val aligned = dist.getSplitter().insertLineBreaks(sent);
+          val aligned = stat.getSplitter().insertLineBreaks(sent);
 
           // now check if a possible linebreak has been found at the end of the sentence
           val srcEndIndex = aligned._1.indexOf(src.lastWord)
@@ -97,7 +97,7 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
     it("should be measured", Intrinistic2) {
   		import collection.JavaConversions._
 
-  		val dist = new DistAlign(
+  		val stat = new StatAlign(
   			java.util.Arrays.asList(translations.map(new Translation(_)): _*),
   			new CustomWordParser)
 
@@ -109,9 +109,9 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
           for (c <- progress) print("\b")
           progress = math.round((i.asInstanceOf[Float] / translations.size) * 100) + "%"
           print(progress)
-          tr -> dist.associate(i, 6)
+          tr -> stat.associate(i, 6)
   		}.map { case (tr: Europarl2.Translation, pts: java.util.List[PossibleTranslations]) =>
-  			val words = tr.words.en.filterNot(w => dist.getWordParser.getWords(w).isEmpty)
+  			val words = tr.words.en.filterNot(w => stat.getWordParser.getWords(w).isEmpty)
   			val possibilties = pts.map(_.getCandidates.map(_.getWord))
 
   			if (words.size != pts.size) {
