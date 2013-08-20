@@ -97,7 +97,33 @@ public class GermanEnglishSplitter extends Splitter {
 
 		assert(de.lineBreaks() == en.lineBreaks());
 
+		uniteGenitive(en);
+
 		return tuple(de, en);
+	}
+
+	/**
+	 * If we ignore the genitive in English this may lead to token sequences such as [W(Parliament), NL(0.75), P('), W(s)].
+	 * This method will fix that to [W(Parliament), P('), W(s), NL(0.75)].
+	 */
+	protected void uniteGenitive(Sentences sent) {
+		int i = 0;
+		while (i < sent.getTokens().size()) {
+			ListIterator<Token> tokens = sent.getTokens().subList(i, sent.getTokens().size()).listIterator();
+			while (tokens.hasNext()) {
+				Token token = tokens.next();
+				++i;
+
+				if (token.isLineBreak() && i + 2 <= sent.getTokens().size()) {
+					List<Token> next = sent.getTokens().subList(i - 1, i + 2);
+					if (next.size() == 3 && next.get(1).getValue().equals("'") && next.get(2).getValue().equals("s")) {
+						next.add(next.remove(0));
+						i += 2;
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	public Tuple<Sentences, Sentences> toSentences(String src, String tgt, List<PossibleTranslations> pts) {

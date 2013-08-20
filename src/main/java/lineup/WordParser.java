@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.regex.*;
 
 public class WordParser {
-	private Pattern wordPattern = Pattern.compile("(\\p{L}[\\p{L}_\\-0-9]*('s)?)|(\\d+(-\\d+)?)");
+	private Pattern wordPattern = Pattern.compile("(\\p{L}[\\p{L}_\\-0-9]*)|(\\d+(-\\d+)?)");
 
 	public static final WordParser instance = new WordParser();
 
