@@ -49,7 +49,7 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
         print(progress)
         print(" done. Current accuracy is " + acc + ".")
 
-        val sent = dist.getSentences2(i, 2)
+        val sent = dist.getSentences(i, 2)
         val src = new Sentences(dist.getCorpus.get(i).getSourceSentences.mkString(" "), dist.getWordParser)
         val tgt = new Sentences(dist.getCorpus.get(i).getTargetSentences.mkString(" "), dist.getWordParser)
 

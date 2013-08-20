@@ -1,14 +1,16 @@
 package lineup;
 
-import java.io.*;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import lineup.splitters.*;
+import lineup.util.Relation;
+import lineup.util.Tuple;
 
-import lineup.splitters.GermanEnglishSplitter;
+import java.io.*;
+import java.util.*;
 
 import static lineup.util.Fun.*;
+import static lineup.util.Terminal.*;
+import static lineup.util.Terminal.painted;
+import static lineup.util.Terminal.red;
 
 /**
  * Demo of functionality so far.
@@ -23,26 +25,41 @@ public class Demo {
     private Collection<Command> commands = new LinkedList<Command>();
     private PrintStream out;
 
-    public Demo() throws UnsupportedEncodingException {
-        corpus = loadCorpus();
-        dist = Alignment.byWordDistribution(corpus);
+    private Random random = new Random();
+    private List<PossibleTranslations> ptsCache;
+
+    public Demo() {
+        this(Alignment.byWordDistribution(loadCorpus()));
+    }
+
+    public Demo(DistAlign<Translation> aligner) {
+        corpus = aligner.getCorpus();
+        dist = aligner;
 
         commands.addAll(List(new Exit(), new Help(), new Corpus(), new Show(), new Break(), new Details()));
 
-        dist.setOut(new PrintStream(System.out, true, "UTF8"));
+        try {
+            out = new PrintStream(System.out, true, "UTF8");
+        } catch (UnsupportedEncodingException e) {
+            System.err.println("Unsupported encoding: " + e.getMessage());
+            System.exit(1);
+        }
         dist.setSplitter(new GermanEnglishSplitter(dist.getWordParser()));
-
-        out = dist.getOut();
     }
 
-    protected List<Translation> loadCorpus() throws UnsupportedEncodingException {
+    public static List<Translation> loadCorpus() {
         try {
             return new LineupCorpusReader().readCorpus("src/main/resources/europarl3.txt");
         } catch (FileNotFoundException e) {
-            InputStream in = getClass().getClassLoader().getResourceAsStream("europarl3.txt");
+            InputStream in = Demo.class.getClassLoader().getResourceAsStream("europarl3.txt");
 
             if (in != null) {
-                return new LineupCorpusReader().readCorpus(new InputStreamReader(in, "UTF8"));
+                try {
+                    return new LineupCorpusReader().readCorpus(new InputStreamReader(in, "UTF8"));
+                } catch (UnsupportedEncodingException ex) {
+                    System.err.println("Unsupported encoding: " + ex.getMessage());
+                    System.exit(1);
+                }
             } else {
                 System.err.println("Could not find corpus: " + e.getMessage());
                 System.exit(1);
@@ -103,6 +120,179 @@ public class Demo {
         return null;
     }
 
+    public void printRandomAligned() {
+        int index = random.nextInt(corpus.size());
+        out.println("============ " + index + " ============");
+        printAligned(index);
+    }
+
+    public void show(int index) {
+        printSentence(index);
+
+        out.println("============ " + index + " ============");
+
+        List<PossibleTranslations> pts = ptsCache = dist.associate(index, 6);
+
+        printbr(index, pts);
+    }
+
+    public void showRandom() {
+        show(random.nextInt(dist.getCorpus().size()));
+    }
+
+    public void printSentence(int index) {
+        NtoNTranslation tr = dist.getCorpus().get(index);
+        out.println(mkString(tr.getSourceSentences(), " "));
+        out.println(mkString(tr.getTargetSentences(), " "));
+    }
+
+    public void printAligned(int index) {
+        printAligned(index, false);
+    }
+
+    public void printAligned(int index, boolean highlightRelated) {
+        NtoNTranslation translation = dist.getCorpus().get(index);
+        List<PossibleTranslations> pts = ptsCache = dist.associate(index, 6);
+        Tuple<Sentences, Sentences> sent = Sentences.wire(translation, pts,
+                dist.getMaxTranslationDistance(), dist.getWordParser());
+
+        printAligned(sent, highlightRelated);
+    }
+
+    public void printAligned(Tuple<Sentences, Sentences> sent, boolean highlightRelated) {
+        try {
+            Tuple<Sentences, Sentences> aligned = dist.getSplitter().insertLineBreaks(sent);
+            Tuple<List<Token>, List<Token>> tokens = tuple(aligned._1.getTokens(), aligned._2.getTokens());
+            LineBreak lineBreak = new LineBreak(42);
+            int breaks = aligned._1.lineBreaks();
+
+            java.io.StringWriter line1 = new java.io.StringWriter();
+            java.io.StringWriter line2 = new java.io.StringWriter();
+            java.io.PrintWriter del = new java.io.PrintWriter(line1);
+            java.io.PrintWriter enl = new java.io.PrintWriter(line2);
+
+            for (int i = 0; i <= breaks; ++i) {
+                Tuple<List<Token>, List<Token>> src = splitAt(lineBreak, tokens._1);
+                Tuple<List<Token>, List<Token>> tgt = splitAt(lineBreak, tokens._2);
+
+                String de = Sentences.getValue(src._1);
+                String en = Sentences.getValue(tgt._1);
+                int width = Math.max(de.length(), en.length());
+                boolean noRelations = true;
+
+                for (Token token : src._1) {
+                    if (token.isWord() && !((Word) token).getMatches().isEmpty()) {
+                        noRelations = false;
+                        break;
+                    }
+                }
+
+                if (width > 0) {
+                    if (highlightRelated) {
+                        if (noRelations) {
+                            del.print(startPaint(fgDefault));
+                            enl.print(startPaint(fgDefault));
+                        } else {
+                            del.print(startPaint(green));
+                            enl.print(startPaint(green));
+                        }
+                    }
+                    del.printf("%" + width + "s", de);
+                    enl.printf("%" + width + "s", en);
+
+                    del.print(stopPaint());
+                    enl.print(stopPaint());
+                }
+
+                String br = "|\u2424|";
+
+                if (i < breaks) {
+                    LineBreak deb = aligned._1.lineBreaksAt(i);
+                    LineBreak enb = aligned._2.lineBreaksAt(i);
+
+                    if (deb.getConfidence() >= 0.75) {
+                        del.print(painted(green, br));
+                        enl.print(painted(green, br));
+                    } else if (deb.getConfidence() >= 0.5) {
+                        del.print(painted(yellow, br));
+                        enl.print(painted(yellow, br));
+                    } else {
+                        del.print(painted(red, br));
+                        enl.print(painted(red, br));
+                    }
+                }
+
+                tokens = tuple(src._2, tgt._2);
+            }
+
+            getOut().println(line1.toString());
+            getOut().println(line2.toString());
+        } catch (AssertionError e) {
+            System.err.println("The algortihm failed on this one (" + e.getMessage() + ").");
+        }
+    }
+
+    public void details() {
+        if (ptsCache != null) {
+            out.println("============ Relations ============");
+            int maxWordLength = 0;
+            for (PossibleTranslations pt : ptsCache) {
+                if (pt.getSourceWord().length() > maxWordLength) {
+                    maxWordLength = pt.getSourceWord().length();
+                }
+            }
+
+            for (PossibleTranslations pt : ptsCache) {
+                out.printf(" %" + maxWordLength + "s => ", pt.getSourceWord());
+                boolean first = true;
+                for (Candidate cand : pt.getCandidates()) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        out.print(", ");
+                    }
+                    out.printf("(%s, %.2g)", cand.getWord(), cand.getProbability());
+                }
+                out.println();
+            }
+        }
+    }
+
+    public void printbr(int index) {
+        printbr(index, dist.associate(index, 6));
+    }
+
+    public void printbr(int index, List<PossibleTranslations> pts) {
+        for (Relation part : dist.split(index, pts)) {
+            String src = part.getSource().trim();
+            String tgt = part.getTarget().trim();
+            int line = Math.max(src.length(), tgt.length());
+
+            for (PossibleTranslations pt : pts) {
+                if (pt.getCandidates().size() > 0) {
+                    src = src.replaceAll("\\b(" + pt.getSourceWord() + ")\\b", "\033[0;32m$1\033[0m");
+
+                    for (Candidate candidate : pt.getCandidates()) {
+                        tgt = tgt.replaceAll("\\b(" + candidate.getWord() + ")\\b", "\033[0;34m$1\033[0m");
+                    }
+                }
+            }
+
+            out.println(src);
+            out.println(tgt);
+
+            StringBuilder sb = new StringBuilder(line);
+            for (int i = 0; i < line; ++i) {
+                sb.append("-");
+            }
+            out.println(sb.toString());
+        }
+    }
+
+    public PrintStream getOut() {
+        return out;
+    }
+
     interface Command {
         public abstract boolean respondTo(String input);
         public abstract void perform(String input);
@@ -141,7 +331,7 @@ public class Demo {
                 if (scanner.hasNextInt()) {
                     int index = scanner.nextInt();
                     if (index >= 0 && index < corpus.size()) {
-                        dist.printSentence(index);
+                        printSentence(index);
                     } else {
                         out.println("n out of range");
                     }
@@ -164,16 +354,16 @@ public class Demo {
                 if (index >= 0 && index < corpus.size()) {
                     if (scanner.hasNextInt()) {
                         int length = scanner.nextInt();
-                        dist.printAligned(dist.getSentences(index, length), false);
+                        printAligned(dist.getSentences(index, length), false);
                     } else {
-                        dist.printAligned(index);
+                        printAligned(index);
                     }
                 } else {
                     out.println("n out of range");
                 }
                 return;
             } else {
-                dist.printRandomAligned();
+                printRandomAligned();
             }
         }
     }
@@ -184,7 +374,7 @@ public class Demo {
         }
 
         public void perform(String input) {
-            dist.details();
+            details();
         }
     }
 
