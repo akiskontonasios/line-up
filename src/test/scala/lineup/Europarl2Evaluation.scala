@@ -37,6 +37,7 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
       val stat = new StatAlign(
         java.util.Arrays.asList(translations.map(new Translation(_)): _*),
         new CustomWordParser)
+      val splitter = new GermanEnglishSplitter(stat.getWordParser)
       val n = translations.size
       var f = 0
       var skip = 0
@@ -54,7 +55,7 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
         val tgt = new Sentences(stat.getCorpus.get(i).getTargetSentences.mkString(" "), stat.getWordParser)
 
         if (src.getTokens.exists(_.isWord) && tgt.getTokens.exists(_.isWord)) {
-          val aligned = stat.getSplitter().insertLineBreaks(sent);
+          val aligned = splitter.insertLineBreaks(sent);
 
           // now check if a possible linebreak has been found at the end of the sentence
           val srcEndIndex = aligned._1.indexOf(src.lastWord)
