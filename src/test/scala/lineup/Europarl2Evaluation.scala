@@ -8,8 +8,8 @@ import org.scalatest.FunSpec
 import org.scalatest.Tag
 import org.scalatest.matchers.ShouldMatchers
 
-object Extrinistic2 extends Tag("Extrinistic2")
-object Intrinistic2 extends Tag("Intrinistic2")
+object Extrinsic2 extends Tag("Extrinsic2")
+object Intrinsic2 extends Tag("Intrinsic2")
 
 class Europarl2Evaluation extends FunSpec with ShouldMatchers {
 
@@ -31,7 +31,7 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
 	}
 
   describe("Extrinistic Accuracy") {
-    it("should be measured", Extrinistic2) {
+    it("should be measured", Extrinsic2) {
       import collection.JavaConversions._
 
       val stat = new StatAlign(
@@ -95,7 +95,7 @@ class Europarl2Evaluation extends FunSpec with ShouldMatchers {
   }
 
 	describe("Intrinistic Accuracy") {
-    it("should be measured", Intrinistic2) {
+    it("should be measured", Intrinsic2) {
   		import collection.JavaConversions._
 
   		val stat = new StatAlign(
