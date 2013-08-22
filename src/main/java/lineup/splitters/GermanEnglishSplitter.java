@@ -7,10 +7,20 @@ import java.util.*;
 
 import static lineup.util.Fun.*;
 
+/**
+ * Splitter specifically for translations from German to English.
+ */
 public class GermanEnglishSplitter extends Splitter {
+
+	public static final Word NO_WORD = new Word(-1, "");
 
 	private double maxTranslationDistance = 9;
 
+	/**
+	 * Creates a new GermanEnglishSplitter.
+	 *
+	 * @param wordParser The WordParser to use to extract words from sentences.
+	 */
 	public GermanEnglishSplitter(WordParser wordParser) {
 		super(wordParser);
 	}
@@ -19,43 +29,19 @@ public class GermanEnglishSplitter extends Splitter {
 		super();
 	}
 
-	public List<Relation> split(Relation pair, List<PossibleTranslations> relations) {
-		Tuple<Sentences, Sentences> translation = toSentences(pair.getSource(), pair.getTarget(), relations);
-
-		return split(translation);
-	}
-
-	public List<Relation> split(NtoNTranslation tr, List<PossibleTranslations> pts) {
-		return split(new Relation(
-				mkString(tr.getSourceSentences(), " "), mkString(tr.getTargetSentences(), " ")), pts);
-	}
-
-	public List<Relation> split(Tuple<Sentences, Sentences> translation) {
-
-		List<Tuple<Sentences, Sentences>> segments = processClusters(translation);
-		List<Relation> result = new LinkedList<Relation>();
-
-		for (Tuple<Sentences, Sentences> seg : segments) {
-			result.add(new Relation(seg._1.getText(), seg._2.getText()));
-		}
-
-		int i = 0;
-		for (Tuple<Sentences, Sentences> seg : segments) {
-			List<Tuple<Sentences, Sentences>> subsegs = processClusters(seg, 1);
-			List<Relation> subresult = new LinkedList<Relation>();
-			if (subsegs.size() > 1) {
-				for (Tuple<Sentences, Sentences> subseg : subsegs) {
-					subresult.add(new Relation(subseg._1.getText(), subseg._2.getText()));
-				}
-				result.remove(i);
-				result.addAll(i, subresult);
-			}
-			++i;
-		}
-
-		return result;
-	}
-
+	/**
+	 * The basic idea for this algorithm is that there will usually be clusters of known translations interleaved
+	 * with words who don't have any translation candidates. Those clusters then indicate words that form phrases with
+	 * a shared thought.
+	 * Although this is specific to the current word alignment model which has a low recall rate.
+	 *
+	 * In a first stage those coarse clusters will be used to insert breaks.
+	 * The second stage then reduces the cluster size to 1 to try break between single words
+	 * in case the first stage didn't yield enough line breaks.
+	 *
+	 * More coarse line breaks are marked as more confident. Accordingly the resulting wrapping will be of a
+	 * better quality when only using those line breaks but may yield fewer possible wrapping positions.
+	 */
 	public Tuple<Sentences, Sentences> insertLineBreaks(Tuple<Sentences, Sentences> translation) {
 
 		List<Tuple<Sentences, Sentences>> segments = processClusters(translation);
@@ -69,7 +55,7 @@ public class GermanEnglishSplitter extends Splitter {
 			enEnd = enStart + seg._2.getTokens().size();
 
 			if (deStart != 0 || enStart != 0) {
-				de.getTokens().add(deStart, new LineBreak(0.75));
+				de.getTokens().add(deStart, new LineBreak(0.75)); // inter-cluster line breaks
 				en.getTokens().add(enStart, new LineBreak(0.75));
 				deEnd++; enEnd++;
 			}
@@ -86,7 +72,7 @@ public class GermanEnglishSplitter extends Splitter {
 					deOffset += subseg._1.getTokens().size();
 					enOffset += subseg._2.getTokens().size();
 					if (deOffset > 0) {
-						de.getTokens().add(deStart + deOffset++, new LineBreak(0.5));
+						de.getTokens().add(deStart + deOffset++, new LineBreak(0.5)); // intra-cluster line breaks
 						en.getTokens().add(enStart + enOffset++, new LineBreak(0.5));
 						++deEnd;
 						++enEnd;
@@ -128,10 +114,6 @@ public class GermanEnglishSplitter extends Splitter {
 
 	public Tuple<Sentences, Sentences> toSentences(String src, String tgt, List<PossibleTranslations> pts) {
 		return Sentences.wire(src, tgt, pts, maxTranslationDistance, getWordParser());
-	}
-
-	public List<Tuple<Sentences, Sentences>> processClusters(Tuple<Sentences, Sentences> translation) {
-		return processClusters(translation, -1);
 	}
 
 	/**
@@ -177,18 +159,18 @@ public class GermanEnglishSplitter extends Splitter {
 		return result;
 	}
 
-	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> cluster(
-			Tuple<Sentences, Sentences> translation) {
-
-		return cluster(translation, true);
+	public List<Tuple<Sentences, Sentences>> processClusters(Tuple<Sentences, Sentences> translation) {
+		return processClusters(translation, -1);
 	}
 
-	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> cluster(
-			Tuple<Sentences, Sentences> translation, boolean mergeIntersections) {
-
-		return cluster(translation, mergeIntersections, -1);
-	}
-
+	/**
+	 * For a translation computes aligned clusters of a given size. That is adjacent source words
+	 * that are associated with candidates in the target sentences.
+	 *
+	 * @param translation Translation for which to get clusters.
+	 * @param mergeIntersections Merge intersecting clusters. This keeps passages such as "European [...] Union" together.
+	 * @param maxClusterSize Maximum number of adjacent source words to form a cluster.
+	 */
 	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> cluster(
 			Tuple<Sentences, Sentences> translation, boolean mergeIntersections,
 			int maxClusterSize) {
@@ -237,6 +219,18 @@ public class GermanEnglishSplitter extends Splitter {
 		}
 
 		return segments;
+	}
+
+	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> cluster(
+			Tuple<Sentences, Sentences> translation) {
+
+		return cluster(translation, true);
+	}
+
+	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> cluster(
+			Tuple<Sentences, Sentences> translation, boolean mergeIntersections) {
+
+		return cluster(translation, mergeIntersections, -1);
 	}
 
 	public List<Tuple<Tuple<Integer, Integer>, Tuple<Integer, Integer>>> mergeIntersectingSegments(
@@ -462,13 +456,67 @@ public class GermanEnglishSplitter extends Splitter {
 		}
 	}
 
+	public List<Relation> split(Relation pair, List<PossibleTranslations> relations) {
+		Tuple<Sentences, Sentences> translation = toSentences(pair.getSource(), pair.getTarget(), relations);
+
+		return split(translation);
+	}
+
+	public List<Relation> split(NtoNTranslation tr, List<PossibleTranslations> pts) {
+		return split(new Relation(
+				mkString(tr.getSourceSentences(), " "), mkString(tr.getTargetSentences(), " ")), pts);
+	}
+
+	public List<Relation> split(Tuple<Sentences, Sentences> translation) {
+
+		List<Tuple<Sentences, Sentences>> segments = processClusters(translation);
+		List<Relation> result = new LinkedList<Relation>();
+
+		for (Tuple<Sentences, Sentences> seg : segments) {
+			result.add(new Relation(seg._1.getText(), seg._2.getText()));
+		}
+
+		int i = 0;
+		for (Tuple<Sentences, Sentences> seg : segments) {
+			List<Tuple<Sentences, Sentences>> subsegs = processClusters(seg, 1);
+			List<Relation> subresult = new LinkedList<Relation>();
+			if (subsegs.size() > 1) {
+				for (Tuple<Sentences, Sentences> subseg : subsegs) {
+					subresult.add(new Relation(subseg._1.getText(), subseg._2.getText()));
+				}
+				result.remove(i);
+				result.addAll(i, subresult);
+			}
+			++i;
+		}
+
+		return result;
+	}
+
 	public void setMaxTranslationDistance(double wordDistance) {
 		this.maxTranslationDistance = wordDistance;
 	}
 
+	/**
+	 * The maximum translation distance defines up until what token distance the Splitter
+	 * will still consider translation candidates. If a candidate is too far away it will
+	 * make too large of a part of the sentence "unbreakable".
+	 *
+	 * Not considering a candidate does not acknowledge that the candidate is wrong,
+	 * but it concedes that the Splitter is not able to come up with a reasonable wrapping position
+	 * based on that.
+	 *
+	 * Example:
+	 *   "er hat ihm den Zugang zur Einrichtung der Behörde gegeben"
+	 *   ->
+	 *   "he gave him access to the facilities of the agency"
+	 *
+	 *   PossibleTranslations(gave, List(hat, gegeben))
+	 *
+	 * Considering 'gegeben' would require the whole sentence to stay intact which would make any wraps impossible.
+	 * So it is discarded to enable some (although not entirely correct) wrapping.
+	 */
 	public double getMaxTranslationDistance() {
 		return maxTranslationDistance;
 	}
-
-	public static final Word NO_WORD = new Word(-1, "");
 }

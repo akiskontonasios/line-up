@@ -34,6 +34,7 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
     private Map<String, Set<String>> tgtDeclCache = new HashMap<String, Set<String>>();
 
     private WordParser wordParser;
+    private CognateModel cognateModel = new CognateModel(4, 0.10);
 
     ExecutorService exec = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors(),
@@ -46,6 +47,12 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
             }
         });
 
+    /**
+     * Creates a new StatAlign instance whose statistical model is based on the given corpus.
+     *
+     * @param corpus Corpus to build model on.
+     * @param wordParser WordParser to extract words from sentences.
+     */
     public StatAlign(List<T> corpus, WordParser wordParser) {
         this.corpus = corpus;
         this.wordParser = wordParser;
@@ -77,6 +84,14 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return getSentences(startIndex, length, 9);
     }
 
+    /**
+     * Joins adjacent translations into one pair of Sentences instances.
+     * This is not specific to this model, but put here for evaluation purposes.
+     *
+     * @param startIndex Index of first translation to use.
+     * @param length Number of adjacent translations to join.
+     * @param maxTranslationDistance Maximum token distance before discarding suggested translations due to wrapping infeasability.
+     */
     public Tuple<Sentences, Sentences> getSentences(int startIndex, int length, double maxTranslationDistance) {
         List<PossibleTranslations> pts = associate(startIndex, 6);
 
@@ -106,26 +121,22 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return Sentences.wire(de.toString(), en.toString(), pts, maxTranslationDistance, getWordParser());
     }
 
-    public List<PossibleTranslations> associate(int index) {
-        return associate(index, 6);
-    }
-
     public List<PossibleTranslations> associate(NtoNTranslation translation) {
         return associate(translation, 6, 3, true);
     }
 
-    public List<PossibleTranslations> associateRetainingAll(int index) {
-        return associate(index, 6, 3, false);
-    }
-
-    public List<PossibleTranslations> associate(int index, int limit) {
-        return associate(index, limit, 3, true);
-    }
-
-    public List<PossibleTranslations> associate(int index, int limit, int prune, boolean retainMostLikely) {
-        return associate(getCorpus().get(index), limit, prune, retainMostLikely);
-    }
-
+    /**
+     * Computes a word alignment for a given translation. Each word of the source sentence is associated with a number
+     * of candidates that are possible translations in the target sentence. The alignment is based both on the basic
+     * statistical model and a congnate model.
+     *
+     * @param translation The translation for which a word alignment is required.
+     * @param limit Limits the number of generated possible translations in the basic step to the n most likely ones.
+     * @param prune Prune the resulting number of candidates to the n most likely ones.
+     * @param retainMostLikely From every target word retain only the one most likely candidate.
+     *
+     * @return For each word in the source sentences of the translation a list of possible translations.
+     */
     public List<PossibleTranslations> associate(NtoNTranslation translation, int limit, int prune, boolean retainMostLikely) {
         List<PossibleTranslations> matches = matches(translation, limit);
         Set<Relation> relations = findRelatedWords(translation.getSourceSentences(), translation.getTargetSentences());
@@ -136,23 +147,15 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         for (PossibleTranslations pt : matches) {
             for (Relation rel : relations) {
                 if (rel.getSource().equals(pt.getSourceWord())) {
-                    boolean newWord = true;
-                    for (Candidate c : pt.getCandidates()) {
-                        if (getWordParser().relatedWords(c.getWord(), rel.getTarget())) {
-                            newWord = false;
-                            break;
-                        }
-                    }
-                    if (newWord || true) {
-                        Candidate cand = new Candidate(
-                                rel.getTarget(),
-                                sourceProbability(rel.getSource()) * targetProbability(rel.getTarget()));
+                    // add cognate matches
+                    Candidate cand = new Candidate(
+                            rel.getTarget(),
+                            sourceProbability(rel.getSource()) * targetProbability(rel.getTarget()));
 
-                        if (rel.getSource().equals(rel.getTarget())) {
-                            cand.setProbability(0.99);
-                        }
-                        pt.getCandidates().add(cand);
+                    if (rel.getSource().equals(rel.getTarget())) {
+                        cand.setProbability(0.99);
                     }
+                    pt.getCandidates().add(cand);
                 }
             }
 
@@ -177,14 +180,34 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return matches;
     }
 
-    public List<PossibleTranslations> matches(int index) {
-        return matches(index, 3);
+    public List<PossibleTranslations> associate(int index) {
+        return associate(index, 6);
     }
 
-    public List<PossibleTranslations> matches(int index, int limit) {
-        return matches(getCorpus().get(index), limit);
+    public List<PossibleTranslations> associateRetainingAll(int index) {
+        return associate(index, 6, 3, false);
     }
 
+    public List<PossibleTranslations> associate(int index, int limit) {
+        return associate(index, limit, 3, true);
+    }
+
+    public List<PossibleTranslations> associate(int index, int limit, int prune, boolean retainMostLikely) {
+        return associate(getCorpus().get(index), limit, prune, retainMostLikely);
+    }
+
+    /**
+     * Computes basic word alignment for a given translation.
+     *
+     * It does so by generating possible translations in both directions, i.e. from source to target and vice versa.
+     * The probabilities of the returned candidates are then the product of the source word being the translation of a
+     * candidate and the other way around.
+     *
+     * @param translation Translation to get word alignment for.
+     * @param limit Limits the number of generated possible translations in the basic step to the n most likely ones.
+     *
+     * @return A list of PossibleTranslations instances containing one instance for each word in the translation's source sentences.
+     */
     public List<PossibleTranslations> matches(NtoNTranslation translation, int limit) {
         List<PossibleTranslations> result = new LinkedList<PossibleTranslations>();
         List<PossibleTranslations> forth = possibleTranslations(translation, limit != -1 ? limit : 3);
@@ -214,6 +237,20 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return result;
     }
 
+    public List<PossibleTranslations> matches(int index) {
+        return matches(index, 3);
+    }
+
+    public List<PossibleTranslations> matches(int index, int limit) {
+        return matches(getCorpus().get(index), limit);
+    }
+
+    /**
+     * Computes the set of possible declensions for a given source word.
+     *
+     * @param word The word to compute declensions for.
+     * @param includeSource If true include the input word in the result.
+     */
     public Set<String> sourceDeclensions(String word, boolean includeSource) {
         if (includeSource && srcDeclCache.containsKey(word)) {
             return srcDeclCache.get(word);
@@ -226,6 +263,12 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         }
     }
 
+    /**
+     * Computes the set of possible declensions for a given target word.
+     *
+     * @param word The word to compute declensions for.
+     * @param includeSource If true include the input word in the result.
+     */
     public Set<String> targetDeclensions(String word, boolean includeSource) {
         if (includeSource && tgtDeclCache.containsKey(word)) {
             return tgtDeclCache.get(word);
@@ -238,6 +281,13 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         }
     }
 
+    /**
+     * Computes the set of possible declensions for a given word from a specific corpus.
+     *
+     * @param word The word to compute declensions for.
+     * @param words The set of words within the source corpus containing possible declensions.
+     * @param includeSource If true include the input word in the result.
+     */
     public Set<String> declensions(String word, Set<String> words, boolean includeSource) {
         Set<String> result = new HashSet<String>();
 
@@ -260,10 +310,17 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return result;
     }
 
-    public Set<Relation> findRelatedWords(List<String> sources, List<String> targets) {
-        return findRelatedWords(sources, targets, 4, 0.10);
-    }
-
+    /**
+     * Finds related words using on a simple cognate model based on n-grams.
+     *
+     * @param sources Source sentences.
+     * @param targets Target sentences.
+     * @param n The dimension of n-grams to be used for the cognate model.
+     * @param minResemblance The minimum resemblance required to consider two words related.
+     *
+     * @return A set of Relation instances each of which represents a pair of related words between the source
+     *         and the target sentences.
+     */
     public Set<Relation> findRelatedWords(List<String> sources, List<String> targets, int n, double minResemblance) {
         Shingling src = new Shingling(n, mkString(sources, ""), getWordParser());
         Shingling tgt = new Shingling(n, mkString(targets, ""), getWordParser());
@@ -280,11 +337,20 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return results;
     }
 
-    public List<PossibleTranslations> pruneMatches(
-            List<PossibleTranslations> matches, Map<String, Integer> targetWordCounts) {
-        return pruneMatches(matches, targetWordCounts, true);
+    public Set<Relation> findRelatedWords(List<String> sources, List<String> targets) {
+        return findRelatedWords(sources, targets, getCognateModel().getW(), getCognateModel().getResemblance());
     }
 
+    /**
+     * Prune the candidates of a list of PossibleTranslations instances so that for each word in the original
+     * target sentence at most 1 candidate which is the most likely remains.
+     *
+     * @param matches Raw word alignment to prune.
+     * @param targetWordCounts Counts for every word in the original target sentence.
+     * @param pure If pure a new list with depp copied PossibleTranslations instances will be returned.
+     *             Otherwise the input list's instance will be modified in-place.
+     * @return Pruned word alignment.
+     */
     public List<PossibleTranslations> pruneMatches(
             List<PossibleTranslations> matches,
             Map<String, Integer> targetWordCounts,
@@ -314,6 +380,24 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return pts;
     }
 
+    public List<PossibleTranslations> pruneMatches(
+            List<PossibleTranslations> matches, Map<String, Integer> targetWordCounts) {
+        return pruneMatches(matches, targetWordCounts, true);
+    }
+
+    /**
+     * Given a list of PossibleTranslations instances remove all but the n most likely occurences of a given word
+     * where n is the number of occurences of said word in the original sentence.
+     *
+     * @param word The (target) word whose unlikely occurences are to be removed.
+     * @param pts The PossibleTranslations list to apply the pruning to.
+     * @param targetWordCounts A map holding for each source word the number of occurences in the original sentence.
+     * @param pure If true a new list with deep copies will be returned.
+     *             Otherwise the input instances will be changed in-place.
+     *
+     * @return List of PossibleTranslation instances where overall the word only the most likely candidates
+     *         are retained.
+     */
     protected List<PossibleTranslations> retainMostLikely(
             String word,
             List<PossibleTranslations> pts,
@@ -375,14 +459,16 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return result;
     }
 
-    public List<PossibleTranslations> possibleTranslations(NtoNTranslation translation, int limit) {
-        return possibleTranslations(translation.getSourceSentences(), translation.getTargetSentences(), limit, false);
-    }
-
-    public List<PossibleTranslations> reversePossibleTranslations(NtoNTranslation translation, int limit) {
-        return possibleTranslations(translation.getTargetSentences(), translation.getSourceSentences(), limit, true);
-    }
-
+    /**
+     * For a number of source sentences compute possible translations from a number of target sentences for each word.
+     *
+     * @param sourceSentences Source sentences to get possible translations for.
+     * @param targetSentences Target sentences to get possible translation from.
+     * @param limit Limits the number of generated possible translations in the basic step to the n most likely ones.
+     * @param reverse Swaps the semantics of source and target sentences.
+     *
+     * @return PossibleTranslations instances for each word in the source sentences in the order in which they occur.
+     */
     public List<PossibleTranslations> possibleTranslations(
             final List<String> sourceSentences, final List<String> targetSentences,
             final int limit, final boolean reverse) {
@@ -421,6 +507,24 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return translations;
     }
 
+    public List<PossibleTranslations> possibleTranslations(NtoNTranslation translation, int limit) {
+        return possibleTranslations(translation.getSourceSentences(), translation.getTargetSentences(), limit, false);
+    }
+
+    public List<PossibleTranslations> reversePossibleTranslations(NtoNTranslation translation, int limit) {
+        return possibleTranslations(translation.getTargetSentences(), translation.getSourceSentences(), limit, true);
+    }
+
+    /**
+     * For a source word get possible translations in a target sentence.
+     *
+     * @param sourceWord Word for which to find possible translations.
+     * @param targetSentences Target sentences in which to search for possible translations.
+     * @param limit Limits the number of generated possible translations in the basic step to the n most likely ones.
+     * @param reverse Reverses semantics of source and target. If true sourceWord is actually a target word
+     *                and the targetSentences are actually source sentences.
+     * @return A PossibleTranslations instance containing translation candidates for the source word in the target sentences.
+     */
     public PossibleTranslations possibleTranslations(String sourceWord, List<String> targetSentences, int limit, boolean reverse) {
         List<Candidate> candidates = new LinkedList<Candidate>();
 
@@ -452,20 +556,32 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return new PossibleTranslations(sourceWord, candidates);
     }
 
+    /**
+     * Probability that a source word is translated by a target word.
+     */
     public double translationProbability(String sourceWord, String targetWord) {
         return (sourceProbability(sourceWord) * relationProbability(targetWord, sourceWord)) /
                 targetProbability(targetWord);
     }
 
+    /**
+     * Probability that a target word is translated by a source word.
+     */
     public double reverseTranslationProbability(String targetWord, String sourceWord) {
         return (targetProbability(targetWord) * relationProbability(sourceWord, targetWord, false)) /
                 sourceProbability(sourceWord);
     }
 
+    /**
+     * Source language model, i.e. the probability of a source word occuring.
+     */
     public double sourceProbability(String word) {
         return wordProbability(word, getSourceWords(), getSourceWordCount());
     }
 
+    /**
+     * Target language model, i.e. the probability of a target word occuring.
+     */
     public double targetProbability(String word) {
         return wordProbability(word, getTargetWords(), getTargetWordCount());
     }
@@ -480,10 +596,22 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return n / (double) distSize;
     }
 
+    /**
+     * Translation model.
+     */
     public double relationProbability(String target, String source) {
         return relationProbability(target, source, true);
     }
 
+    /**
+     * Translation model stating the probability that a source word appears in every translation
+     * containing a certain target word.
+     *
+     * @param word1 Target word.
+     * @param word2 Source word.
+     * @param targetGivenSource If true (default) the first word is a target word and the second one a source word.
+     *                          If false it is the other way around.
+     */
     public double relationProbability(String word1, String word2, boolean targetGivenSource) {
         int occurrences = 0;
 
@@ -577,5 +705,38 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
 
     public WordParser getWordParser() {
         return wordParser;
+    }
+
+    /**
+     * The default cognate model uses 4-shinglings and requires a resemblance of only 0.10.
+     */
+    public CognateModel getCognateModel() {
+        return cognateModel;
+    }
+
+    static class CognateModel {
+        private int w;
+        private double resemblance;
+
+        public CognateModel(int w, double resemblance) {
+            this.w = w;
+            this.resemblance = resemblance;
+        }
+
+        public int getW() {
+            return w;
+        }
+
+        public void setW(int w) {
+            this.w = w;
+        }
+
+        public double getResemblance() {
+            return resemblance;
+        }
+
+        public void setResemblance(double resemblance) {
+            this.resemblance = resemblance;
+        }
     }
 }

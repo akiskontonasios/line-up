@@ -379,9 +379,9 @@ public class Demo {
                 if (index >= 0 && index < corpus.size()) {
                     if (scanner.hasNextInt()) {
                         int length = scanner.nextInt();
-                        printAligned(stat.getSentences(index, length), false);
+                        printAligned(stat.getSentences(index, length), true);
                     } else {
-                        printAligned(index);
+                        printAligned(index, true);
                     }
                 } else {
                     out.println("n out of range");

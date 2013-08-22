@@ -9,6 +9,9 @@ import lineup.util.*;
 import static lineup.util.Fun.*;
 import static lineup.util.Terminal.*;
 
+/**
+ * Represents one or more sentences as a list of tokens that can be either Words, Punctuation or LineBreaks.
+ */
 public class Sentences {
 
 	private List<Token> tokens = new ArrayList<Token>();
@@ -86,6 +89,45 @@ public class Sentences {
 	}
 
 	/**
+	 * Wires words in source sentences to possible translations in target sentences.
+	 * This basically just represents an NtoNTranslation and a list of PossibleTranslations instances
+	 * as a tuple of Sentences instances.
+	 *
+	 * When wiring Sentences each Word in the source Sentences instance will be intialised with
+	 * a list of matching Words in the target Sentences (possible translations).
+	 * This is then used for further processing, i.e. the insertion of line breaks.
+	 *
+	 * @param src Source sentence(s).
+	 * @param tgt Target sentence(s).
+	 * @param pts Word alignment.
+	 * @param maxTranslationDistance Maximum allowed translation distance.
+	 * @param wordParser WordParser to extract words from sentences.
+	 *
+	 * @see #getMaximumTranslationDistance()
+	 */
+	public static Tuple<Sentences, Sentences> wire(
+			String src, String tgt, List<PossibleTranslations> pts,
+			double maxTranslationDistance, WordParser wordParser) {
+
+		Sentences en = new Sentences(tgt, wordParser);
+		Sentences de = new Sentences(src, wordParser, pts, en);
+
+		de.validateMatches(maxTranslationDistance, en.getTokens().size());
+
+		return tuple(de, en);
+	}
+
+	public static Tuple<Sentences, Sentences> wire(
+			NtoNTranslation translation, List<PossibleTranslations> pts,
+			double maxTranslationDistance, WordParser wordParser) {
+
+		return wire(
+			mkString(translation.getSourceSentences(), " "),
+			mkString(translation.getTargetSentences(), " "),
+			pts, maxTranslationDistance, wordParser);
+	}
+
+	/**
 	 * Start and end inclusive.
 	 */
 	public Sentences subSentence(int start, int end) {
@@ -122,7 +164,7 @@ public class Sentences {
 	}
 
 	/**
-	 * Only consider matches within less than maxDistance % (of sentense length) distance.
+	 * Only consider matches within less than maxDistance.
 	 * Everything farther away we cannot reasonably break.
 	 */
 	public void validateMatches(double maxWordDistance, int targetLength) {
@@ -331,27 +373,5 @@ public class Sentences {
 		}
 
 		return null;
-	}
-
-	public static Tuple<Sentences, Sentences> wire(
-			String src, String tgt, List<PossibleTranslations> pts,
-			double maxTranslationDistance, WordParser wordParser) {
-
-		Sentences en = new Sentences(tgt, wordParser);
-		Sentences de = new Sentences(src, wordParser, pts, en);
-
-		de.validateMatches(maxTranslationDistance, en.getTokens().size());
-
-		return tuple(de, en);
-	}
-
-	public static Tuple<Sentences, Sentences> wire(
-			NtoNTranslation translation, List<PossibleTranslations> pts,
-			double maxTranslationDistance, WordParser wordParser) {
-
-		return wire(
-			mkString(translation.getSourceSentences(), " "),
-			mkString(translation.getTargetSentences(), " "),
-			pts, maxTranslationDistance, wordParser);
 	}
 }

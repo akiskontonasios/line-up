@@ -1,5 +1,8 @@
 package lineup.splitters;
 
+/**
+ * A token within a Sentences instance.
+ */
 public abstract class Token {
 	/**
 	 * Token represents a word within the sentence.
@@ -43,5 +46,8 @@ public abstract class Token {
 		return result;
 	}
 
+	/**
+	 * This Token's text value for output.
+	 */
 	public abstract String getValue();
 }
