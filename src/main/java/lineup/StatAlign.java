@@ -153,7 +153,7 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
                             sourceProbability(rel.getSource()) * targetProbability(rel.getTarget()));
 
                     if (rel.getSource().equals(rel.getTarget())) {
-                        cand.setProbability(0.99);
+                        cand.setProbability(0.99); // if the words are exactly alike (e.g. names)
                     }
                     pt.getCandidates().add(cand);
                 }
