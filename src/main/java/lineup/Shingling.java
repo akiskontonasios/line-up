@@ -91,6 +91,30 @@ public class Shingling {
             return false;
         }
 
+        public double resemblance(Shingles shingles) {
+            return intersection(shingles).size() / (double) union(shingles).size();
+        }
+
+        protected Shingles intersection(Shingles shingles) {
+            Shingles ret = new Shingles(getWord());
+            ret.retainAll(shingles);
+
+            return ret;
+        }
+
+        protected Shingles union(Shingles shingles) {
+            Shingles ret = new Shingles(getWord());
+
+            ret.addAll(Shingles.this);
+            for (String str : shingles) {
+                if (!ret.contains(str)) {
+                    ret.add(str);
+                }
+            }
+
+            return ret;
+        }
+
         public String getWord() {
             return word;
         }

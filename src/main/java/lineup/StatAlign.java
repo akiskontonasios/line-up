@@ -261,29 +261,18 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
     }
 
     public Set<Relation> findRelatedWords(List<String> sources, List<String> targets) {
-        return findRelatedWords(sources, targets, 4, 2);
+        return findRelatedWords(sources, targets, 4, 0.10);
     }
 
-    public Set<Relation> findRelatedWords(List<String> sources, List<String> targets, int n, int precision) {
-        if (n == -1)
-            n = 3;
-        if (precision == -1)
-            precision = 2;
-
+    public Set<Relation> findRelatedWords(List<String> sources, List<String> targets, int n, double minResemblance) {
         Shingling src = new Shingling(n, mkString(sources, ""), getWordParser());
         Shingling tgt = new Shingling(n, mkString(targets, ""), getWordParser());
         Set<Relation> results = new HashSet<Relation>();
 
         for (Shingling.Shingles ssh : src.getShingles()) {
             for (Shingling.Shingles tsh : tgt.getShingles()) {
-                int matches = 0;
-                for (String ngram : ssh) {
-                    if (tsh.containsIgnoreCase(ngram)) {
-                        if (++matches >= precision || (ssh.size() == 1 && tsh.size() == 1)) {
-                            results.add(new Relation(ssh.getWord(), tsh.getWord()));
-                            break;
-                        }
-                    }
+                if (ssh.resemblance(tsh) >= minResemblance) {
+                    results.add(new Relation(ssh.getWord(), tsh.getWord()));
                 }
             }
         }
