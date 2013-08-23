@@ -148,7 +148,7 @@ object Europarl3Evaluation {
   lazy val wordAlignedTranslations: List[Europarl2.Translation] = {
     import scala.util.parsing.json._
 
-    val src = io.Source.fromFile("src/main/resources/europarl3-extract-word-aligned.json").getLines.map(_.trim).mkString
+    val src = io.Source.fromFile("src/main/resources/europarl3-extract-word-aligned.json").mkString
     val res = JSON.parseFull(src)
 
     res.map(_.asInstanceOf[List[_]]).map { list =>
@@ -163,6 +163,9 @@ object Europarl3Evaluation {
           Some(WordParser.instance))
       }
     }.getOrElse {
+      import JSON._
+
+      println(phrase(root)(new lexical.Scanner(src)))
       assert(false, "Could not read word-aligned corpus.")
       List()
     }
