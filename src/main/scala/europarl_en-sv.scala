@@ -2,6 +2,7 @@ package opus
 
 import java.io.{BufferedReader, FileReader}
 import lineup.NtoNTranslation
+import lineup.WordParser
 
 /**
  * Word-aligned extract from Europarl v2 English to Swedish
@@ -11,12 +12,17 @@ object Europarl2 {
 	case class Translation(
 		en: String,
 		sv: String,
-		wordMap: Map[Int, Seq[Int]]
+		wordMap: Map[Int, Seq[Int]],
+		wordParser: Option[WordParser] = None
 	) extends NtoNTranslation { ts =>
 
 		object words {
-			lazy val en = ts.en.split("\\s+").toIndexedSeq
-			lazy val sv = ts.sv.split("\\s+").toIndexedSeq
+			import scala.collection.JavaConversions._
+
+			lazy val en = wordParser.map(p => p.getWords(ts.en).toIndexedSeq).getOrElse(
+				ts.en.split("\\s+").toIndexedSeq)
+			lazy val sv = wordParser.map(p => p.getWords(ts.sv).toIndexedSeq).getOrElse(
+				ts.sv.split("\\s+").toIndexedSeq)
 		}
 
 		object relations {

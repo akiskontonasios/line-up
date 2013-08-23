@@ -36,6 +36,9 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
     private WordParser wordParser;
     private CognateModel cognateModel = new CognateModel(4, 0.10);
 
+    private int candidateLimit = 6;
+    private int pruneMatches = 3;
+
     ExecutorService exec = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors(),
         new ThreadFactory() {
@@ -93,10 +96,10 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
      * @param maxTranslationDistance Maximum token distance before discarding suggested translations due to wrapping infeasability.
      */
     public Tuple<Sentences, Sentences> getSentences(int startIndex, int length, double maxTranslationDistance) {
-        List<PossibleTranslations> pts = associate(startIndex, 6);
+        List<PossibleTranslations> pts = associate(startIndex, getCandidateLimit());
 
         for (int i = 1; i < length; ++i) {
-            pts.addAll(associate(startIndex + i, 6));
+            pts.addAll(associate(startIndex + i, getCandidateLimit()));
             try {
                 Thread.sleep(250); // concurrency bug (during evaluation) workaround
             } catch (InterruptedException e) {
@@ -119,10 +122,6 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         }
 
         return Sentences.wire(de.toString(), en.toString(), pts, maxTranslationDistance, getWordParser());
-    }
-
-    public List<PossibleTranslations> associate(NtoNTranslation translation) {
-        return associate(translation, 6, 3, true);
     }
 
     /**
@@ -180,16 +179,24 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
         return matches;
     }
 
+    public List<PossibleTranslations> associate(NtoNTranslation translation) {
+        return associate(translation, getCandidateLimit(), getPruneMatches(), true);
+    }
+
+    public List<PossibleTranslations> associate(NtoNTranslation translation, int limit) {
+        return associate(translation, limit, getPruneMatches(), true);
+    }
+
     public List<PossibleTranslations> associate(int index) {
-        return associate(index, 6);
+        return associate(index, getCandidateLimit());
     }
 
     public List<PossibleTranslations> associateRetainingAll(int index) {
-        return associate(index, 6, 3, false);
+        return associate(index, getCandidateLimit(), getPruneMatches(), false);
     }
 
     public List<PossibleTranslations> associate(int index, int limit) {
-        return associate(index, limit, 3, true);
+        return associate(index, limit, getPruneMatches(), true);
     }
 
     public List<PossibleTranslations> associate(int index, int limit, int prune, boolean retainMostLikely) {
@@ -210,8 +217,8 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
      */
     public List<PossibleTranslations> matches(NtoNTranslation translation, int limit) {
         List<PossibleTranslations> result = new LinkedList<PossibleTranslations>();
-        List<PossibleTranslations> forth = possibleTranslations(translation, limit != -1 ? limit : 3);
-        List<PossibleTranslations> back = reversePossibleTranslations(translation, limit != -1 ? limit : 3);
+        List<PossibleTranslations> forth = possibleTranslations(translation, limit != -1 ? limit : getCandidateLimit());
+        List<PossibleTranslations> back = reversePossibleTranslations(translation, limit != -1 ? limit : getCandidateLimit());
 
         for (PossibleTranslations ptForth : forth) {
             List<Candidate> candidates = new LinkedList<Candidate>();
@@ -238,7 +245,7 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
     }
 
     public List<PossibleTranslations> matches(int index) {
-        return matches(index, 3);
+        return matches(index, getCandidateLimit());
     }
 
     public List<PossibleTranslations> matches(int index, int limit) {
@@ -697,6 +704,22 @@ public class StatAlign<T extends NtoNTranslation> implements Aligner {
 
     public int getTargetWordCount() {
         return targetWordCount;
+    }
+
+    public void setCandidateLimit(int limit) {
+        this.candidateLimit = limit;
+    }
+
+    public int getCandidateLimit() {
+        return candidateLimit;
+    }
+
+    public void setPruneMatches(int pruneTo) {
+        this.pruneMatches = pruneTo;
+    }
+
+    public int getPruneMatches() {
+        return pruneMatches;
     }
 
     public void setWordParser(WordParser wordParser) {
