@@ -269,6 +269,16 @@ public class Sentences {
 		return tokens;
 	}
 
+	public List<Word> getWords() {
+		List<Word> words = new LinkedList<Word>();
+		for (Token token : getTokens()) {
+			if (token.isWord()) {
+				words.add((Word) token);
+			}
+		}
+		return words;
+	}
+
 	public String getText() {
 		StringBuilder sb = new StringBuilder();
 
