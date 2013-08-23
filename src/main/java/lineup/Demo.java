@@ -40,7 +40,8 @@ public class Demo {
         stat = aligner;
         splitter = new GermanEnglishSplitter(stat.getWordParser());
 
-        commands.addAll(List(new Exit(), new Help(), new Corpus(), new Show(), new Break(), new Details()));
+        commands.addAll(List(new Exit(), new Help(), new Corpus(),
+                new Show(), new Break(), new Details(), new Align()));
 
         try {
             out = new PrintStream(System.out, true, "UTF8");
@@ -93,7 +94,7 @@ public class Demo {
 
     public void showCommands() {
         out.println("+-----------------------------------------------------------------------------+");
-        out.println("| line-up                  ==== Commands =====                     09.08.2013 |");
+        out.println("| line-up                  ==== Commands =====                     23.08.2013 |");
         out.println("+-----------------------------------------------------------------------------+");
         out.println("|                                                                             |");
         out.println("| help    - all this                                                          |");
@@ -410,6 +411,38 @@ public class Demo {
 
         public void perform(String input) {
             showCommands();
+        }
+    }
+
+    class Align implements Command {
+        public boolean respondTo(String input) {
+            return input.startsWith("align");
+        }
+
+        public void perform(String input) {
+            if (input.equals("align")) { // reset
+                int index = random.nextInt(stat.getCorpus().size());
+                System.out.println(index);
+                System.out.println();
+                NtoNTranslation translation = stat.getCorpus().get(index);
+                List<PossibleTranslations> pts = ptsCache = stat.associate(translation);
+                Tuple<Sentences, Sentences> sent = Sentences.wire(
+                        translation, pts, getMaxTranslationDistance(), stat.getWordParser());
+
+                System.out.println(mkString(translation.getSourceSentences(), " "));
+                System.out.println();
+                System.out.println(mkString(translation.getTargetSentences(), " "));
+                System.out.println();
+
+                for (Word word : sent._1.getWords()) {
+                    System.out.print(word.getIndex() + "-" + word.getValue() + " ");
+                }
+                System.out.println(); System.out.println();
+                for (Word word : sent._2.getWords()) {
+                    System.out.print(word.getIndex() + "-" + word.getValue() + " ");
+                }
+                System.out.println();
+            }
         }
     }
 }
